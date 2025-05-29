@@ -46,7 +46,7 @@ If a ReporTree folder is provided as input, this section may also show:
 Besides the HTML report, this tool provides a wide variety of source files that are generated throughout the analysis. Examples of these files are:
 - _All_correspondence.tsv_: It reports the inter-pipeline corresponding thresholds between two pipelines
   
-# Scripts orchestration
+# Script orchestration
   - _EvalTree.py_ automatically orchestrates the execution of scripts, handling inputs and outputs to perform the following analysis:
   
   ### Congruence analysis
@@ -62,19 +62,19 @@ Besides the HTML report, this tool provides a wide variety of source files that 
               CS = AWC A→B + AWC B→A + AR
 
   ### Identification of pipeline stability regions     
-  - It also uses the **comparing_partitions_v2.py** script.
+  - It also uses the **comparing_partitions_v2.py** script
   - Stability regions are defined as threshold ranges where clustering results are consistent 
   -  The analysis method is **Stability**:
-      - neighborhood Adjusted Wallace coefficient (nAWC): Subsequent comparisons are made between consecutive thresholds (n + 1 → n) in a sequence, where each threshold is compared with its previous one.  
+      - neighborhood Adjusted Wallace coefficient (nAWC): Subsequent comparisons are made between consecutive thresholds (n + 1 → n) in a sequence, where each threshold is compared with its previous one  
 
  ### Identification of corresponding points
   - It uses **get_best_correspondence.py** script available in [insapathogenomics/WGS_cluster_congruence](https://github.com/insapathogenomics/WGS_cluster_congruence)
-  - This analysis identifies, for each pipeline comparison, the threshold that provides the most similar clustering results in the other pipeline referred to as the best corresponding point. This is determined based on the highest CS scores.
+  - This analysis identifies, for each pipeline comparison, the threshold that provides the most similar clustering results in the other pipeline referred to as the best corresponding point. This is determined based on the highest CS scores
   -  Only comparisons yielding CS ≥ 2.85, which ensures a score ≥0.95 for each CS metric component, were considered as possible corresponding points 
       
  ### Outbreak
   - If outbreak analysis was specified, _EvalTree.py_ calls stats_outbreak_analysis.py script available in [insapathogenomics/WGS_cluster_congruence](https://github.com/insapathogenomics/WGS_cluster_congruence)
-  - It determines the number of clusters identified in a pipeline at a given threshold that could be detected with the same composition by another pipeline at a similar or even higher threshold.
+  - It determines the number of clusters identified in a pipeline at a given threshold that could be detected with the same composition by another pipeline at a similar or even higher threshold
 
 ## Installation with conda
 
