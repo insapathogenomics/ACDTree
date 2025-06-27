@@ -103,7 +103,7 @@ def test_arguments_default():
 
 
     assert all_files == 34
-    assert total_images == 11
+    assert total_images == 12
     assert total_tsv == 17
     assert nr_html == 1
 
