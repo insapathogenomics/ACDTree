@@ -50,8 +50,9 @@ def get_path_toolbox():
     
     path_toolbox_script = os.path.realpath(__file__)     
     directory_toolbox = os.path.dirname(path_toolbox_script)
+    python = sys.executable
 
-    return path_toolbox_script, directory_toolbox
+    return path_toolbox_script, directory_toolbox, python
 
 def get_path_other_scripts(directory_toolbox):
 
@@ -617,7 +618,7 @@ def check_range_threshold(partition_matrix, threshold, log):
 
     return start_threshold, end_threshold
 
-def management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, input1, input2, prefix_both, output, score, log):
+def management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, input1, input2, prefix_both, output, score, python, log):
     
     """
     Executes congruence scripts to evaluate the agreement between two genomic pipelines.
@@ -665,7 +666,7 @@ def management_main_scripts(comparing_partitions_script, get_best_part_correspon
      
     print_log(f"\t\tRunning comparing_partitions_v2.py in “between_methods” mode.", log)
        
-    cmd=[ "python", comparing_partitions_script, "-o1", "0", "-o2", "0", "-a", "between_methods",
+    cmd=[ python, comparing_partitions_script, "-o1", "0", "-o2", "0", "-a", "between_methods",
       "-log", f"{output}/{prefix_both}_Comparing_partitions.log", "-t", f"{output}/{prefix_both}",
       "-i1", input1, "-i2", input2, "--keep-redundants"]
     
@@ -678,7 +679,7 @@ def management_main_scripts(comparing_partitions_script, get_best_part_correspon
       
     print_log(f'\tIdentifying the inter-pipeline “corresponding points”', log)
     print_log(f'\t\tRunning get_best_part_correspondence.py with a score of {score}.', log)
-    cmd=["python", get_best_part_correspondence_script, "-i", output, "-s", str(score)]
+    cmd=[python, get_best_part_correspondence_script, "-i", output, "-s", str(score)]
     print_log(f'\t\t\t{" ".join(cmd)}', log) 
 
     subprocess.run(cmd)
@@ -687,7 +688,7 @@ def management_main_scripts(comparing_partitions_script, get_best_part_correspon
     # # 3- Execution of the third script - remove hyphens from ALL_CORRESPONDENCE.tsv
 
     print_log("\t\tFiltering output file with remove_hifen.py.", log)
-    cmd=["python", remove_hifen_script, "-i", f"{output}/ALL_CORRESPONDENCE.tsv", "-o", f"{output}/{prefix_both}_ALL_CORRESPONDENCE.tsv"]
+    cmd=[python, remove_hifen_script, "-i", f"{output}/ALL_CORRESPONDENCE.tsv", "-o", f"{output}/{prefix_both}_ALL_CORRESPONDENCE.tsv"]
     print_log(f'\t\t\t{" ".join(cmd)}', log) 
     subprocess.run(cmd)
     print_log(f"\t\tDone.\n", log)
@@ -792,7 +793,7 @@ def filter_partition_matrix(partition_matrix, prefix_single, start_threshold, en
    
     return input_filtered
 
-def stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, log):
+def stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, python, log):
    
     """
     Executes the stability analysis using comparing_partitions_v2.py when the file *_stableRegions.tsv 
@@ -815,7 +816,7 @@ def stability_region(output, partition_matrix, prefix, comparing_partitions_scri
     #print_log(f'\n---------------------------------------------- Function: stability_region ----------------------------------------------', log)
 
     cmd = [
-        "python", comparing_partitions_script, "-i1", partition_matrix, "-o1", "0", "-a", "stability", "-n", str(n_stability), "-thr", str(thr_stability),
+        python, comparing_partitions_script, "-i1", partition_matrix, "-o1", "0", "-a", "stability", "-n", str(n_stability), "-thr", str(thr_stability),
         "-log", f"{output}/{prefix}_Comparing_partitions.log", "-t", f"{output}/{prefix}", "--keep-redundants"]
 
     print_log(f'\t\t\t{" ".join(cmd)}', log)  
@@ -2848,7 +2849,7 @@ def main():
     # Read the command line arguments and retrieve paths
 
     args = parser.parse_args()
-    path_toolbox_script, directory_toolbox = get_path_toolbox()
+    path_toolbox_script, directory_toolbox, python = get_path_toolbox()
     comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, stats_outbreak_script = get_path_other_scripts(directory_toolbox)
     
     #------------------------------------------------------------------
@@ -3210,7 +3211,7 @@ def main():
             if len(sub) == 7:   #folders
                 stable_region = sub[6]     
                 if stable_region is None or threshold !='max':
-                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, log) 
+                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, python, log) 
                     files_to_stability.append([file_stability,prefix])
                 else:
                     files_to_stability.append([stable_region,prefix])
@@ -3218,7 +3219,7 @@ def main():
             if len(sub) == 6: #files
                 type_file = sub[3]
                 if type_file == True: #if true it is partition matrix
-                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, log) 
+                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, python ,log) 
                     files_to_stability.append([file_stability, prefix])
                 else:
                     go_stability = False
@@ -3270,7 +3271,7 @@ def main():
             i1_prefix=inputs_variables[0][1]
             i2_prefix=inputs_variables[1][1]
 
-            path_all_correspondence_lower = management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, i1_matrix, i2_matrix, prefix_both, output, score_value, log)
+            path_all_correspondence_lower = management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, i1_matrix, i2_matrix, prefix_both, output, score_value, python, log)
 
             #Final score
             fig_heatmap = get_heatmap(output, i1_prefix, i2_prefix, threshold, log)
