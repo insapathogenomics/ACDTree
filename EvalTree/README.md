@@ -76,7 +76,18 @@ Besides the HTML report, this tool provides a wide variety of source files that 
   - If outbreak analysis was specified, _EvalTree.py_ calls stats_outbreak_analysis.py script available in [insapathogenomics/WGS_cluster_congruence](https://github.com/insapathogenomics/WGS_cluster_congruence)
   - It determines the number of clusters identified in a pipeline at a given threshold that could be detected with the same composition by another pipeline at a similar or even higher threshold
 
-## Installation with conda
+# Installation and dependencies
+
+### Dependencies:
+- pandas
+- plotly
+- pytest
+- kaleido
+- scikit-learn
+- scipy
+- statsmodels
+
+### Installation with conda
 
 ```bash
 git clone https://github.com/jg-pereira/CENTAUR.git
@@ -102,9 +113,11 @@ Run EvalTree:
 ```bash
 python EvalTree.py -h
 ```
-
-### Dependencies:
-
+### Installation with PyPi
+Run:
+ ```bash
+pip install evaltree
+```
 ## Usage
 
   ```bash
