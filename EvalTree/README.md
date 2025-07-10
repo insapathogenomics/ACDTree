@@ -89,6 +89,8 @@ Besides the HTML report, this tool provides a wide variety of source files that 
 
 ### Installation with conda
 
+#### 1. Manual installation from GitHub repository
+
 ```bash
 git clone https://github.com/jg-pereira/CENTAUR.git
 cd CENTAUR/EvalTree/
@@ -113,6 +115,13 @@ Run EvalTree:
 ```bash
 python EvalTree.py -h
 ```
+
+#### 2. Install via Conda
+
+```bash
+conda install -c joana.gomes evaltree
+```
+
 ### Installation with PyPi
 Run:
  ```bash
@@ -145,7 +154,7 @@ Congruence
                         created and used for subsequent analysis. Ranges are specified using a hyphen to separate the minimum and maximum values (e.g., 10-20). If this option is not set, the script will
                         perform clustering for all possible thresholds in the range 0 to the maximum threshold.
  
- Visualising clustering
+ReporTree Clustering Visualization
 
   -ps {partitions_summary,sample_of_interest}, --plots_summary {partitions_summary,sample_of_interest}
                         [OPTIONAL] Specifies the type of cluster characterization file (*_partition_summary.tsv or *_SAMPLES_OF_INTEREST_partitions_summary.tsv), both of which are expected to be located
@@ -166,7 +175,7 @@ Congruence
                         category for visualization in the cluster plots. When there are more than 5 slices (default), they will be combined into one category named Other
   -pcp PLOTS_CATEGORY_PERCENTAGE, --plots_category_percentage PLOTS_CATEGORY_PERCENTAGE
                         [OPTIONAL] Determines the percentage of plot categories in the *_partition_summary.tsv or *_sample_of_interest_partition_summary.tsv file that are intended to be collapse into the
-                        Othercategory for visualization in the cluster plots. Slices plots with a lower percentage than the entered plots_category_percentage will be combined into one category named Others
+                        Other category for visualization in the cluster plots. Slices plots with a lower percentage than the entered plots_category_percentage will be combined into one category named Others
 Outbreak 
 
 -to THRESHOLD_OUTBREAK, --threshold_outbreak THRESHOLD_OUTBREAK
@@ -181,17 +190,30 @@ Outbreak
   -rto, --repeat_threshold_outbreak
                         [OPTIONAL] This argument can only be used after of a previous analysis of threshold_outbreak.
 
-```
+  -v, --version         [OPTIONAL] Specify the version number of EvalTree.
 
-### A simple EvalTree command line example using two input ReporTree folders 
+  -n_stab, --n_stability N_STABILITY
+                        [OPTIONAL] Range of thresholds for which the cluster composition can be consistent/stable.
+
+  -thr_stab, --thr_stability THR_STABILITY
+                        [OPTIONAL] The neighborhood Adjusted Wallace Coefficient (nAWC) threshold is used to determine if a clustering threshold is considered consistent/stable.
+```
+### Examples of command-line usage with:
+  #### Manual Installation using:
+  - Two input files
+```bash
+python EvalTree.py -i1 X_partitions.tsv -i2 Y_partitions.tsv 
+```
+ - Two ReporTree folders to generate clustering visualizations
 ```bash
 python EvalTree.py -i1 input1 -i2 input2 -o output -ps partitions_summary -pt MST-7x1.0 -cp name_column -to "MST-7x1.0,MST-7x1.0;<=MST-7x1.0,MST-9x1.0"
 ```
-### A simple EvalTree command line example using two files 
+  #### Installation via Conda OR PyPi using:
+  - Two input files
 ```bash
-python EvalTree.py -i1 X_partitions.tsv -i2 Y_partitions.tsv -o output
+evaltree i1 X_partitions.tsv -i2 Y_partitions.tsv -o output
 ```
-  
+
 ## Citation
 
 If you run EvalTree, please cite the publication:
