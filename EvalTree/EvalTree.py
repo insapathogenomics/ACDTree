@@ -7,7 +7,7 @@ By Joana Gomes Pereira
 
 """
 version = "0.1.2"
-last_updated = "2025-05-20"
+last_updated = "2025-07-24"
 
 import datetime
 import argparse
