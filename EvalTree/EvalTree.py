@@ -6,8 +6,8 @@ By Joana Gomes Pereira
 @INSA
 
 """
-version = "0.1.2"
-last_updated = "2025-07-24"
+version = "0.1.3"
+last_updated = "2025-07-25"
 
 import datetime
 import argparse
@@ -274,18 +274,14 @@ def check_output(output):
         Absolute path to the output directory.      
     """
     #print(f'\n---------------------------------------------- Function: check_output ----------------------------------------------\n') 
-    rename = False
-    if output == None:
-        output='pipeline1_vs_pipeline2'
-        rename = True
-        os.makedirs(output, exist_ok=True)
 
-    elif not os.path.isdir(output):
+
+    if not os.path.isdir(output):
         sys.exit(f'\tError: The specified {output} is not a valid directory.')
 
     full_path_output = os.path.abspath(output)
     
-    return full_path_output, rename
+    return full_path_output
 
 def check_threshold(threshold):
 
@@ -507,7 +503,7 @@ def check_combinations_arguments(plots_summary_arg, data_folder, data_files):
                 errors.append(f'\tError: It is impossible to use the -to argument only with one folder.\n')
                         
             if '-to' in args and len(data_files) == 1:
-                errors.append(f'\tError: It is impossible to use the -to argument only with input files.\n')
+                errors.append(f'\tError: It is impossible to use the -to argument with input files.\n')
 
     if len(data_folder) == 2:
         if '-to' in args:
@@ -515,12 +511,20 @@ def check_combinations_arguments(plots_summary_arg, data_folder, data_files):
                 if data_folder[0][5] is not None and data_folder [1][5] is not None:
                     go_outbreaks = True
 
+    cluster_args = ['-cp', '-pt', '-n', '-ps', '-pcn', '-pcp']
     if data_files:
         if len(data_files) == 2:
-            cluster_args = ['-cp', '-pt', '-n', '-ps', '-pcn', '-pcp']
+            #cluster_args = ['-cp', '-pt', '-n', '-ps', '-pcn', '-pcp']
             for elem in cluster_args:
                 if elem in args:
                     errors.append(f'\tError: It is impossible to use the {elem} argument when input file(s) are provided.\n')
+
+        if len(data_files) == 1 and len(data_folder) != 1:
+            for elem in cluster_args:
+                if elem in args:
+                    errors.append(f'\tError: It is impossible to use the {elem} argument when input file(s) are provided.\n')
+
+        
 
     if errors:
         unique_errors = set(errors)
@@ -932,8 +936,6 @@ def get_heatmap(output, i1_prefix, i2_prefix, threshold, log):
                 step_x = math.ceil(len_x / max_ticks)  
                 list_index = [i * step_x for i in range(max_ticks)]
                 list_strings = string_columns[::step_x]
-                print(list_strings)
-                print(list_index)
 
                 fig_heatmap.update_layout(
                     xaxis = dict(tickvals = list_index, ticktext = list_strings),
@@ -975,14 +977,16 @@ def get_tendency(output, prefix_both, threshold, log):
     df_1=df.iloc[:,0]
     
     values_rev = [string for string in df_1 if '_rev' in string]
-
     nr_point=len(df_1)
     nr_point_method_2 = len(values_rev)
     nr_point_method_1 = nr_point - nr_point_method_2
 
     for elem in values_rev:
-        string_r=elem.split('_')
-        reverse_prefix = string_r[-2]+'_vs_'+string_r[0]
+        string_r=elem.split('_vs_')
+        s = string_r[-1]
+        string_modified=s[:-4]
+
+        reverse_prefix = string_modified+'_vs_'+string_r[0]
     
     df_modified=df.replace(to_replace = elem, value = reverse_prefix)      
 
@@ -2469,7 +2473,7 @@ def get_clusters(mst_groups, prefix):
             html_content+=f'<div class="image-row">\n'   
 
             for image in images:
-                width_percent = 25
+                #width_percent = 25
                 fig_html=pio.to_html(image, include_plotlyjs = 'cdn', full_html = False)
                 html_content += f'<div class="image-item">{fig_html}</div>\n' 
                 #html_content += f'<div class="image-item" style="flex: 0 0 {width_percent}%; max-width: {width_percent}%;">{fig_html}</div>\n'
@@ -2484,6 +2488,7 @@ def get_clusters(mst_groups, prefix):
 def summary_congruence():
 
     html_content=f"""
+    </div>
     <button class="accordion">Inter-pipeline cluster congruence</button> 
         <div class="panel" >
        <p > This section evaluates the clustering congruence between two WGS-based pipelines by comparing their cluster compositon at all possible threshold levels.
@@ -2711,20 +2716,6 @@ def print_log(message, log):
 	print(message, file = log)
 
 
-def safe_rename(current_folder, new_name):
-
-    base_name = new_name
-    counter = 1
-    while os.path.exists(new_name):
-        new_name = f"{base_name}_{counter}"
-        counter += 1
-
-    try:
-        os.rename(current_folder, new_name)
-        print(f"Folder renamed to: {new_name}")
-    except OSError as e:
-        print(f"Error renaming folder: {e}")
-
 
 def is_folder_empty(folder_path):
     """
@@ -2889,7 +2880,7 @@ def main():
     
     parser.add_argument('-v', '--version',
             action='version',
-            version='EvalTree 0.1.2, last update 2025-07-24', 
+            version='EvalTree 0.1.3, last update 2025-07-25', 
             help='[OPTIONAL] Specify the version number of EvalTree.')
     
     parser.add_argument('-n_stab', '--n_stability',
@@ -2949,7 +2940,8 @@ def main():
     
     #----------------------------------------------------------------
     #   I2- Check the output argument (-o)
-    output, rename = check_output(args.output)
+    if args.output != None:
+        output = check_output(args.output)
 
     #----------------------------------------------------------------
     #   I3- Check the list argument (-list)
@@ -3028,14 +3020,30 @@ def main():
     # III- Validation of file prefixes provided in different inputs
    
     data_folder, data_files, prefix_both = check_data_folders_file(data_folder, data_files)
-   
+           
     #---------------------------------------------------------
     # IV- Validation of partition matrix  FUNDAMENTAL
       
     inputs_variables = join_inputs_variables(data_folder,data_files)
- 
+   
+    #--------------------------------------------------------------------------------------------------
+    # V - Rename ouput folder if it was automatically created
+    if args.output == None:
+        output_folder = prefix_both 
+
+        path_folder = os.path.abspath(output_folder)
+        if os.path.exists(path_folder):
+            sys.exit("Error: a folder with that name already exists. Please provide a folder name using the -o argument to save the results.")
+
+        os.makedirs(output_folder)
+        path_folder=os.path.abspath(output_folder)
+        if not os.path.isdir(path_folder):
+            sys.exit("Critical error: the folder was not created successfully. Please provide a folder name using the -o argument to save the results.")
+        
+        output = path_folder
+
     #---------------------------------------------------------
-    # V- Validation of congruence
+    # VI- Validation of congruence
     go_congruence = False     
    
     if len(inputs_variables) == 2:
@@ -3050,7 +3058,7 @@ def main():
 
 
     #---------------------------------------------------------------------------------------------------
-    # VI- Outbreaks (-rto) 
+    # VII- Outbreaks (-rto) 
 
     if repeat_threshold_outbreak is not False:
         
@@ -3066,7 +3074,7 @@ def main():
             sys.exit("Error: You must specify a new argument for the threshold_outbreak (-to).")   
     
     #---------------------------------------------------------------------------------------------------
-    # VII - Stable Regions (-thr_stab)
+    # VIII - Stable Regions (-thr_stab)
 
     if thr_stability != 0.99:
         if not (0 <= thr_stability <= 1):
@@ -3404,13 +3412,6 @@ def main():
     print_log("\nEnd: " + str(end), log)
     print_log("Time elapsed: " + str(elapsed), log)
     log.close()
-
-    #--------------------------------------------------------------------------------------------------
-    # Rename ouput folder if it was automatically created
-    if rename == True:
-        
-        rename_folder = os.path.join(os.path.dirname(output), prefix_both)
-        safe_rename(output, rename_folder)  
 
 
 if __name__ == "__main__":
