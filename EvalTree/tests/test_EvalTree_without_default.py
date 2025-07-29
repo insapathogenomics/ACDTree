@@ -19,14 +19,14 @@ def test_arguments():
     
     main_path=os.path.dirname(__file__)  
     path=os.path.dirname(main_path)
-    script_path = os.path.join(path,"evaltree.py")
+    script_path = os.path.join(path,"EvalTree.py")
     input1=os.path.join(main_path,'input1')  
     input2=os.path.join(main_path,'input2')
     output=os.path.join(main_path,'TEST2')
     if not os.path.exists(output):
         os.mkdir(output)
  	
-    result= subprocess.check_output(f"python {script_path} -i1 {input1} -i2 {input2} -o {output} -s 2.95 -t 2-28 -ps partitions_summary -pt MST-7x1.0,MST-8x1.0 -cp country,source -n 4 -to ""MST-7x1.0,MST-7x1.0\;MST-8x1.0,\<=MST-20x1.0""  ", shell=True)
+    result= subprocess.check_output(f"python {script_path} -i1 {input1} -i2 {input2} -o {output} -s 2.95 -t 2-28 -ps partitions_summary -pt MST-7x1.0,MST-8x1.0 -cp country,source -n 4 -to \"MST-7x1.0,MST-7x1.0;MST-8x1.0,<=MST-20x1.0\" ", shell=True)
 
 # check input 1 files (GT)
 
@@ -147,8 +147,7 @@ def test_arguments():
     assert num_columns==3
 
                                                 #Pipeline GT_vs_HC
-    print('------------------------------------------------------------------------')
-    print(output)
+
     GT_vs_HC_final_score=pd.read_csv(os.path.join(output,"GT_vs_HC_final_score.tsv"), sep='\t', header=None)
     assert GT_vs_HC_final_score.iloc[4,5]=='3.0'
     num_lines, num_columns=GT_vs_HC_final_score.shape
@@ -251,8 +250,8 @@ def test_arguments():
     total_files=len(files)
     nr_html=len(html)
     
-    assert all_files ==57
-    assert total_images == 23
+    assert all_files == 57
+    assert total_images == 24
     assert total_files==28
     assert nr_html ==1
 
@@ -261,7 +260,7 @@ def test_RTO_argument():
 
     main_path=os.path.dirname(__file__) 
     path=os.path.dirname(main_path)
-    script_path = os.path.join(path,"evaltree.py")
+    script_path = os.path.join(path,"EvalTree.py")
     input1=os.path.join(main_path,'input1')  
     input2=os.path.join(main_path,'input2')
     output=os.path.join(main_path,'TEST2')
@@ -290,7 +289,7 @@ def test_RTO_argument():
     all_files=os.listdir(output)
     list_files=[]
     original_html=f'GT_vs_HC_report.html'
-    new_html=f'GT_vs_HC_NEW_report.html'
+    new_html=f'GT_vs_HC_2ºRUN_report.html'
     for file in all_files:
         if file ==original_html:
             list_files.append(file)
@@ -303,7 +302,7 @@ def test_plots_category_percentage():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1')
     input2 = os.path.join(main_path, 'input2')
     output = os.path.join(main_path, 'TEST2', 'plots_category_percentage')
@@ -342,7 +341,7 @@ def test_sequence_type_and_folder():
     
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1','GT_1.tsv')
     input2 = os.path.join(main_path, 'input2')
     output = os.path.join(main_path, 'TEST2', 'st_vs_folder')
@@ -363,7 +362,7 @@ def test_sequence_type_and_folder():
     total_files=len(files)
     nr_html=len(html)
     
-    assert all_files == 30
+    assert all_files == 29
     assert total_images == 12
     assert total_files == 13
     assert nr_html == 1
@@ -373,7 +372,7 @@ def mx_partition_vs_mx_partitions():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path,'input1' ,'GT_partitions.tsv')
     input2 = os.path.join(main_path, 'input2' ,'HC_partitions.tsv')
     output = os.path.join(main_path, 'TEST2', 'mx_vs_mx')
@@ -404,7 +403,7 @@ def test_plots_category_number():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1')
     input2 = os.path.join(main_path, 'input2')
     output = os.path.join(main_path, 'TEST2', 'plots_category_number')
@@ -427,8 +426,8 @@ def test_plots_category_number():
     total_files=len(files)
     nr_html=len(html)
 
-    assert all_files ==38
-    assert total_images == 13
+    assert all_files ==  38
+    assert total_images == 14
     assert total_files==19
     assert nr_html ==1
 
@@ -439,7 +438,7 @@ def test_folder_vs_folder():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1')
     input2 = os.path.join(main_path, 'input2')
     output = os.path.join(main_path, 'TEST2', 'folder_vs_folder')
@@ -460,7 +459,7 @@ def test_file_vs_folder():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1')
     input2 = os.path.join(main_path, 'input2','HC_2.tsv')
     output = os.path.join(main_path, 'TEST2', 'file_vs_folder')
@@ -472,13 +471,13 @@ def test_file_vs_folder():
         f"python {script_path} -i1 {input1} -i2 {input2} -o {output}",shell=True)
 
     all_files=len(os.listdir(output))
-    assert all_files == 21
+    assert all_files == 20
 
 def test_file_vs_file():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1','GT_1.tsv')
     input2 = os.path.join(main_path, 'input2','HC_2.tsv')
     output = os.path.join(main_path, 'TEST2', 'file1_vs_file2')
@@ -490,13 +489,13 @@ def test_file_vs_file():
         f"python {script_path} -i1 {input1} -i2 {input2} -o {output}", shell=True)
 
     all_files=len(os.listdir(output))
-    assert all_files == 16
+    assert all_files == 15
 
 def test_file_mx_partition():
 
     main_path = os.path.dirname(__file__)  
     path = os.path.dirname(main_path)  
-    script_path = os.path.join(path, "evaltree.py")
+    script_path = os.path.join(path, "EvalTree.py")
     input1 = os.path.join(main_path, 'input1','GT_1.tsv')
     input2 = os.path.join(main_path, 'input2','HC_partitions.tsv')
     output = os.path.join(main_path, 'TEST2', 'file_vs_file')
@@ -510,7 +509,7 @@ def test_file_mx_partition():
     )
 
     all_files=len(os.listdir(output))
-    assert all_files == 21
+    assert all_files == 20
 
 
     file_path = os.path.join(main_path, "TEST2")

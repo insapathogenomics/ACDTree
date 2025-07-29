@@ -6,8 +6,8 @@ By Joana Gomes Pereira
 @INSA
 
 """
-version = "1.0.0"
-last_updated = "2025-05-20"
+version = "0.1.3"
+last_updated = "2025-07-25"
 
 import datetime
 import argparse
@@ -50,8 +50,9 @@ def get_path_toolbox():
     
     path_toolbox_script = os.path.realpath(__file__)     
     directory_toolbox = os.path.dirname(path_toolbox_script)
+    python = sys.executable
 
-    return path_toolbox_script, directory_toolbox
+    return path_toolbox_script, directory_toolbox, python
 
 def get_path_other_scripts(directory_toolbox):
 
@@ -185,8 +186,8 @@ def check_folder(input_path):
     """
     #print(f'\n---------------------------------------------- Function: check_folder ----------------------------------------------\n')
 
-    if input_path == []:
-        sys.exit(f"\tError: The folder {input_path} is empty or does not exist.")
+    #if input_path == []:
+        #sys.exit(f"\tError: The folder {input_path} is empty or does not exist.")
 
     files = [os.path.join(input_path, file) for file in os.listdir(input_path)] 
 
@@ -229,8 +230,8 @@ def check_folder(input_path):
             prefix_st=file[:-18]
             prefix_list.append(prefix_st)
             file_prefix_map[file] = prefix_st
-  
-    unique_prefixes = set(prefix_list)    #{'input1/GT'} not dicionary
+        
+    unique_prefixes = set(prefix_list)    
     list_prefixes = [os.path.basename(p) for p in unique_prefixes]
 
     if len(unique_prefixes) > 1:
@@ -241,7 +242,10 @@ def check_folder(input_path):
                     print(f"  - {file}")
         sys.exit()
     else:
-        final_prefix = list_prefixes[0]
+        if list_prefixes == []:
+            sys.exit('Without ReporTree files.')
+        else:
+            final_prefix = list_prefixes[0]
         
     print(f'\tFiles of {input_path}:')
     print(f'\t\tPrefix: {final_prefix}')
@@ -271,10 +275,12 @@ def check_output(output):
     """
     #print(f'\n---------------------------------------------- Function: check_output ----------------------------------------------\n') 
 
+
     if not os.path.isdir(output):
         sys.exit(f'\tError: The specified {output} is not a valid directory.')
 
     full_path_output = os.path.abspath(output)
+    
     return full_path_output
 
 def check_threshold(threshold):
@@ -298,9 +304,9 @@ def check_threshold(threshold):
     #print(f'\n---------------------------------------------- Function: check_threshold ----------------------------------------------\n')
 
     if threshold != 'max':
-        parts = threshold.split('-')  #['2','8']
+        parts = threshold.split('-')  
 
-        if len(parts) != 2 or not all(part.isdigit() for part in parts):  #['2','p']  ['p', 'm']
+        if len(parts) != 2 or not all(part.isdigit() for part in parts):  
             sys.exit(f"\tError: The threshold argument (-t) must be in the format 'X-Y', where X and Y are positive integers.")
 
     return threshold
@@ -370,7 +376,7 @@ def check_file(file):
     if nr_columns == 2:
         n_groups = len(df.iloc[:,1].unique())
         prefix = prefix_file.split('.tsv')[0]
-        file_type = False # Sequence-type matrix
+        file_type = False 
            
     elif nr_columns > 2:
 
@@ -451,20 +457,21 @@ def check_combinations_arguments(plots_summary_arg, data_folder, data_files):
             sample_of_interest = elem[4] 
             cluster_composition = elem[5] 
             input_path = elem[2] 
+            stable_regions = elem[6]
 
 
             if type_file == 'sample_of_interest':
                 if '-cp' not in args:
-                    errors.append(f'\tError: For clustering analysis you must specify the column plots (-cp) argument with sample_of_interest file.\n')
+                    errors.append(f'\tError: For clustering analysis you must specify the column plots (-cp) argument with SAMPLE_OF_INTEREST_partitions_summary file.\n')
                 
                 if '-n' in args:
-                    errors.append(f'\tError: It is impossible to use -n argument with sample_of_interest file.\n')
+                    errors.append(f'\tError: It is impossible to use -n argument with SAMPLE_OF_INTEREST_partitions_summary file.\n')
                 
                 if '-pt' not in args:
-                    errors.append(f'\tError: For clustering analyis you must specify the plots threshold (-pt) argument with sample_of_interest file.\n')
+                    errors.append(f'\tError: For clustering analyis you must specify the plots threshold (-pt) argument with SAMPLE_OF_INTEREST_partitions_summary file.\n')
 
                 if sample_of_interest is None:
-                    errors.append(f'\tError: The file sample_of_interest does not exist in {input_path}.\n')
+                    errors.append(f'\tError: The file SAMPLE_OF_INTEREST_partitions_summary does not exist in {input_path}.\n')
                 go_clustering = True
 
             if type_file == 'partitions_summary':       
@@ -481,6 +488,12 @@ def check_combinations_arguments(plots_summary_arg, data_folder, data_files):
 
                     if partitions_summary is None:
                         errors.append(f'\tError: The file partitions_summary does not exist in {input_path}.\n') 
+            
+            if stable_regions is None:
+                if '-n_stab' in args:
+                    errors.append(f'\tError: It is impossible to use the -n_stab argument when the file stableRegions does not exist.\n')
+                if '-n_thr' in args:
+                    errors.append(f'\tError: It is impossible to use the -n_thr argument when the file stableRegions does not exist.\n')
                 
             if '-to' in args:
                 if cluster_composition is None:
@@ -490,7 +503,7 @@ def check_combinations_arguments(plots_summary_arg, data_folder, data_files):
                 errors.append(f'\tError: It is impossible to use the -to argument only with one folder.\n')
                         
             if '-to' in args and len(data_files) == 1:
-                errors.append(f'\tError: It is impossible to use the -to argument only with input files.\n')
+                errors.append(f'\tError: It is impossible to use the -to argument with input files.\n')
 
     if len(data_folder) == 2:
         if '-to' in args:
@@ -498,12 +511,20 @@ def check_combinations_arguments(plots_summary_arg, data_folder, data_files):
                 if data_folder[0][5] is not None and data_folder [1][5] is not None:
                     go_outbreaks = True
 
+    cluster_args = ['-cp', '-pt', '-n', '-ps', '-pcn', '-pcp']
     if data_files:
         if len(data_files) == 2:
-            cluster_args = ['-cp', '-pt', '-n', '-ps', '-pcn', '-pcp']
+            #cluster_args = ['-cp', '-pt', '-n', '-ps', '-pcn', '-pcp']
             for elem in cluster_args:
                 if elem in args:
                     errors.append(f'\tError: It is impossible to use the {elem} argument when input file(s) are provided.\n')
+
+        if len(data_files) == 1 and len(data_folder) != 1:
+            for elem in cluster_args:
+                if elem in args:
+                    errors.append(f'\tError: It is impossible to use the {elem} argument when input file(s) are provided.\n')
+
+        
 
     if errors:
         unique_errors = set(errors)
@@ -581,13 +602,13 @@ def check_range_threshold(partition_matrix, threshold, log):
 
     if threshold != 'max':
         parts = threshold.split('-')
-        start_threshold = int(parts[0])  #2
-        end_threshold = int(parts[1])    #8
+        start_threshold = int(parts[0])  
+        end_threshold = int(parts[1])    
         
         df = pd.read_table(partition_matrix) 
         columns_df = len(df.columns)
-        column_range = (0, columns_df) #0-102
-        min_column,max_column=column_range  #0-min ; 102 -max
+        column_range = (0, columns_df) 
+        min_column,max_column=column_range  
 
         if start_threshold > end_threshold:
             sys.exit(f"\tError: Start threshold {start_threshold} is greater than end threshold {end_threshold}.")
@@ -604,7 +625,7 @@ def check_range_threshold(partition_matrix, threshold, log):
 
     return start_threshold, end_threshold
 
-def management_main_scripts( comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, input1, input2, prefix_both, output, score, log):
+def management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, input1, input2, prefix_both, output, score, python, log):
     
     """
     Executes congruence scripts to evaluate the agreement between two genomic pipelines.
@@ -648,34 +669,35 @@ def management_main_scripts( comparing_partitions_script, get_best_part_correspo
     
     print_log(f'\tObtaining the cluster congruence score ...', log)
     
-    #1- Running the first script with the user's inputs  #input1 e 2 são as matrizes de partição
+    #1- Running the first script with the user's inputs 
      
     print_log(f"\t\tRunning comparing_partitions_v2.py in “between_methods” mode.", log)
-
-    cmd=[ "python", comparing_partitions_script, "-o1", "0", "-o2", "0", "-a", "between_methods",
+       
+    cmd=[ python, comparing_partitions_script, "-o1", "0", "-o2", "0", "-a", "between_methods",
       "-log", f"{output}/{prefix_both}_Comparing_partitions.log", "-t", f"{output}/{prefix_both}",
       "-i1", input1, "-i2", input2, "--keep-redundants"]
+    
     print_log(f'\t\t\t{" ".join(cmd)}', log)  
-
-    subprocess.run(cmd, capture_output=True, text=True)
+    subprocess.run(cmd)
+    
     print_log(f"\t\tDone.\n", log)
   
     #2- Running the second script with the user's inputs #Input directory with all the *final_score.tsv files 
       
     print_log(f'\tIdentifying the inter-pipeline “corresponding points”', log)
     print_log(f'\t\tRunning get_best_part_correspondence.py with a score of {score}.', log)
-    cmd=["python", get_best_part_correspondence_script, "-i", output, "-s", str(score)]
+    cmd=[python, get_best_part_correspondence_script, "-i", output, "-s", str(score)]
     print_log(f'\t\t\t{" ".join(cmd)}', log) 
 
-    subprocess.run(cmd, capture_output=True, text=True)
+    subprocess.run(cmd)
     print_log(f"\t\tDone.\n", log)
 
     # # 3- Execution of the third script - remove hyphens from ALL_CORRESPONDENCE.tsv
 
     print_log("\t\tFiltering output file with remove_hifen.py.", log)
-    cmd=["python", remove_hifen_script, "-i", f"{output}/ALL_CORRESPONDENCE.tsv", "-o", f"{output}/{prefix_both}_ALL_CORRESPONDENCE.tsv"]
+    cmd=[python, remove_hifen_script, "-i", f"{output}/ALL_CORRESPONDENCE.tsv", "-o", f"{output}/{prefix_both}_ALL_CORRESPONDENCE.tsv"]
     print_log(f'\t\t\t{" ".join(cmd)}', log) 
-    subprocess.run(cmd, capture_output=True, text=True)
+    subprocess.run(cmd)
     print_log(f"\t\tDone.\n", log)
 
     original_file=(f"{output}/{prefix_both}_ALL_CORRESPONDENCE.tsv")
@@ -749,7 +771,7 @@ def filter_partition_matrix(partition_matrix, prefix_single, start_threshold, en
     Parameters
     ----------
     partition_matrix: str
-        Relative path to the partition matrix with containing all thresholds.
+        Relative path to the partition matrix.
     prefix_single: str 
         Prefix to be used in the name of the filtered partition matrix file.
     output: str
@@ -774,11 +796,11 @@ def filter_partition_matrix(partition_matrix, prefix_single, start_threshold, en
     input_filtered = f"{output}/{prefix_single}_partitions-filtered.tsv"
     df_filtered.to_csv(input_filtered, sep = '\t', index = False)
     
-    print_log(f'\tFiltering the partitions table for the range {start_threshold}-{end_threshold + 1}...',log)
+    print_log(f'\tFiltering the partitions table for the range {start_threshold}-{end_threshold}...',log)
    
     return input_filtered
 
-def stability_region(output, partition_matrix, prefix, comparing_partitions_script, log):
+def stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, python, log):
    
     """
     Executes the stability analysis using comparing_partitions_v2.py when the file *_stableRegions.tsv 
@@ -801,9 +823,8 @@ def stability_region(output, partition_matrix, prefix, comparing_partitions_scri
     #print_log(f'\n---------------------------------------------- Function: stability_region ----------------------------------------------', log)
 
     cmd = [
-        "python", comparing_partitions_script, "-i1", partition_matrix, "-o1", "0", "-a", "stability",
-        "-log", f"{output}/{prefix}_Comparing_partitions.log", "-t", f"{output}/{prefix}", "--keep-redundants"
-    ]
+        python, comparing_partitions_script, "-i1", partition_matrix, "-o1", "0", "-a", "stability", "-n", str(n_stability), "-thr", str(thr_stability),
+        "-log", f"{output}/{prefix}_Comparing_partitions.log", "-t", f"{output}/{prefix}", "--keep-redundants"]
 
     print_log(f'\t\t\t{" ".join(cmd)}', log)  
 
@@ -845,12 +866,9 @@ def get_heatmap(output, i1_prefix, i2_prefix, threshold, log):
     n_lines, n_column = df_filtered.shape
     
     #---------------------------------
-    fig_heatmap = px.imshow(
-                            df_filtered,
-                            title =f"Congruence Score: {i1_prefix} vs {i2_prefix}", 
-                            labels = dict(x = f" {i2_prefix}", y = f"{i1_prefix}"))
+    fig_heatmap = px.imshow(df_filtered,                    
+                            labels = dict(x = f"Threshold <br> -{i2_prefix}-</br>", y = f"Threshold <br> -{i1_prefix}-</br>"))
 
-    
     if n_lines > max_ticks:
         step = math.ceil(n_lines/ max_ticks)
         y_list = list(range(0, n_lines, step))
@@ -872,14 +890,14 @@ def get_heatmap(output, i1_prefix, i2_prefix, threshold, log):
                             coloraxis = dict(colorscale = 'Blues', cmin = 0, cmax = 3))
     
     #--------------------------------------------------------------------------
-    # For both sequence type matrix:
+    # For both other matrices:
     if n_column == 1:
         fig_heatmap.update_layout(xaxis = dict(tickmode = 'array', tickvals = [0], ticktext = [0]))
     if n_lines == 1:
         fig_heatmap.update_layout(yaxis = dict(tickmode = 'array', tickvals = [0], ticktext = [0]))
         
     #--------------------------------------------------------------------------
-    #For partition filtered matrix:
+    #For the partitions filtered matrix:
 
     if threshold != 'max':
 
@@ -890,8 +908,7 @@ def get_heatmap(output, i1_prefix, i2_prefix, threshold, log):
             columns_y = df.iloc[:, 0]
             string_columns_y = [s.split('-')[1].split('x')[0] for s in columns_y]
             len_y = len(columns_y)
-            print(len_y)
-
+           
             if len_y <= max_ticks:
                 index_y = list(range(len_y))
                 fig_heatmap.update_layout(xaxis = dict(tickmode ='array', tickvals = [0], ticktext = [0]))
@@ -929,17 +946,19 @@ def get_heatmap(output, i1_prefix, i2_prefix, threshold, log):
                     xaxis = dict(tickvals = list(range(len_x)), ticktext = string_columns),
                     yaxis = dict(tickvals = list(range(len_x)), ticktext = string_columns))
 
+    fig_heatmap.update_layout(margin=dict(l=0, r=0, t=20, b=0))
     fig_heatmap.write_image(f'{output}/{i1_prefix}_vs_{i2_prefix}_heatmap.png', format = "png")
+
     return fig_heatmap
 
-def get_tendency(output, prefix_both, log):
+def get_tendency(output, prefix_both, threshold, log):
     
     """
     Creates a scatter plot with trendline from *_All_correspondence.tsv,
     showing the best correspondence points between methods in each pipeline.
     
-    Parameter
-    ---------
+    Parameters
+    ----------
     output: str
         Path to the directory where the *_All_correspondence.tsv file is located and where the figure will be saved.
 
@@ -954,19 +973,54 @@ def get_tendency(output, prefix_both, log):
 
     all_correspondence=glob.glob(output + '/*_All_correspondence.tsv')[0]
     df = pd.read_csv(all_correspondence, sep = "\t")
-    x_axes = df.columns[1]
-    y_axes = df.columns[2]
 
-    fig_tendency = px.scatter(df, x = x_axes, y = y_axes, trendline = "ols", title = "Comparison", color_discrete_sequence = ["orange", "blue"], color = 'comparison')  #color comparison é necessario para ter as duas rectas
-    fig_tendency.update_layout(title_x = 0.5) 
+    df_1=df.iloc[:,0]
+    
+    values_rev = [string for string in df_1 if '_rev' in string]
+    nr_point=len(df_1)
+    nr_point_method_2 = len(values_rev)
+    nr_point_method_1 = nr_point - nr_point_method_2
+
+    for elem in values_rev:
+        string_r=elem.split('_vs_')
+        s = string_r[-1]
+        string_modified=s[:-4]
+
+        reverse_prefix = string_modified+'_vs_'+string_r[0]
+    
+    df_modified=df.replace(to_replace = elem, value = reverse_prefix)      
+
+    x_axes = df_modified.columns[1]
+    y_axes = df_modified.columns[2]
+
+    fig_tendency = px.scatter(df_modified, x = x_axes, y = y_axes, trendline = "ols", color_discrete_sequence = ["orange", "blue"], color = 'comparison')  
+
+    if threshold != 'max':
+        values= threshold.split('-')
+        first_value=int(values[0])
+        second_value=int(values[1]) 
+        values_list= [str(i) for i in range(first_value, second_value + 1)]
+        n_elem=len(values_list)
+        index_list=list(range(0, n_elem))
+
+        text_list=[]
+        for elem in values_list:
+            text_list.append(elem)
+
+        fig_tendency.update_layout(xaxis=dict(tickvals = index_list, ticktext=text_list))
+        fig_tendency.update_layout(yaxis=dict(tickvals = index_list, ticktext=text_list))
+
+
+
+    fig_tendency.update_layout(title_x = 0.5, legend=dict( orientation="h",yanchor="bottom",  y=-0.35, xanchor="center", x=0.5), margin=dict(l=0, r=0, t=20, b=0))
     fig_tendency.write_image(f'{output}/{prefix_both}_tendency.png', format = "png")
-
-    return fig_tendency
+    
+    return fig_tendency, nr_point_method_1, nr_point_method_2
 
 def join_inputs_variables(data_folder, data_files):
 
     """
-    Join the inputs varibles provided in the command line for the congruence analyis.
+    Join the input variables provided in the command line for the congruence analysis.
 
     Parameters
     ----------
@@ -1005,7 +1059,7 @@ def join_inputs_variables(data_folder, data_files):
             sys.exit("\tError: It is impossible to proceed the analysis")
         else:
             print(f'\nChecking the command line:')
-            print(f'\tThe provided arguments are all compatible. Everything is ready to run ToolBox.py :)\n')
+            print(f'\tThe provided arguments are all compatible. Everything is ready to run EvalTree.py :)\n')
 
     return inputs_variables
 
@@ -1020,7 +1074,7 @@ def load_and_prepare_data(file, log):
 
     Parameters
     ----------
-    file : str
+    file: str
         Path to the file that will be processed.
 
     Returns
@@ -1092,7 +1146,7 @@ def check_plot_threshold(plots_thresholds, df_filtered, log):
         if elem  in name_threshold_in_df:
             method.append(elem)
         else:
-            print_log(f"\tThe plot threshold {elem} does not exist in the file.", log)
+            print_log(f"\tThe plot threshold argument (method) {elem} does not exist in the file.", log)
 
     return method
 
@@ -1107,9 +1161,9 @@ def check_threshold_in_file(method, df_filtered, clustering_file, log):
     method: list
         A list of thresholds in the format 'MST-{value}x1.0'.
     df_filtered: pandas.DataFrame
-        Dataframe containing data of the selected file.
+        A dataframe containing data from the selected file.
     clustering_file: str
-        Path to the file (partitions_summary or sample_of_interes)
+        Path to the file (partitions_summary or sample_of_interest)
 
     Return
     ------
@@ -1125,7 +1179,7 @@ def check_threshold_in_file(method, df_filtered, clustering_file, log):
       
     for elem in method:
         if elem not in unique_threshold:
-            print(f'\tThe plot threshold entered {elem} does not exist in the {clustering_file}...')   
+            print(f'\tThe plot threshold argument (method) entered {elem} does not exist in the {clustering_file}...')   
         else:    
             filtered_threshold.append(elem)
  
@@ -1134,7 +1188,7 @@ def check_threshold_in_file(method, df_filtered, clustering_file, log):
 def filter_df_by_plot_threshold(filtered_threshold, df_filtered, n_cluster, log):
 
     """
-    Check if the number of cluster selected by the n_cluster argument can be applied to the dataframe.
+    Check if the number of clusters selected by the n_cluster argument can be applied to the dataframe.
     Filter the dataframe according to the threshold plots and limit the number of clusters per threshold.
     
     Parameters
@@ -1143,7 +1197,7 @@ def filter_df_by_plot_threshold(filtered_threshold, df_filtered, n_cluster, log)
         List of valid thresholds to be applied to df_filtered to generate cluster plots.
     
     df_filtered: pandas.DataFrame
-        Dataframe organized with the largest clusters.
+        The dataframe is organized with the largest clusters.
 
     n_cluster: int
         The number of clusters (pie plot(s)) to be produced.
@@ -1181,6 +1235,7 @@ def filter_df_by_plot_threshold(filtered_threshold, df_filtered, n_cluster, log)
     return result_df
 
 def filtering_df_threshold(filtered_threshold, df_filtered, log):
+
     """
     Filter the dataframe according to the provided threshold values.
 
@@ -1189,12 +1244,12 @@ def filtering_df_threshold(filtered_threshold, df_filtered, log):
     filtered_threshold : list
         List of valid thresholds to be applied to df_filtered.
 
-    df_filtered : pandas.DataFrame
+    df_filtered: pandas.DataFrame
         DataFrame containing the clustering information, where the first column represents thresholds.
 
     Returns
     -------
-    df_filtered_threshold : pandas.DataFrame
+    df_filtered_threshold: pandas.DataFrame
         DataFrame filtered by the thresholds in filtered_threshold.
     """
     #print_log(f'\n---------------------------------------------- Function: filtering_df_threshold ----------------------------------------------\n', log)
@@ -1246,10 +1301,12 @@ def check_column_plots(user_columns_plots, result_df, log):
     return check_columns
 
 def generate_pastel_color():
+
     """Generation of the random color pallete to the cluster plots"""
     r = random.randint(100, 200)
     g = random.randint(100, 200)
     b = random.randint(100, 200)
+
     return f'#{r:02X}{g:02X}{b:02X}'
 
 def check_structure_lines_column_plots(check_columns, result_df, plots_category_percentage, plots_category_number,output, prefix, plots_summary, category_colors, log):
@@ -1303,7 +1360,7 @@ def check_structure_lines_column_plots(check_columns, result_df, plots_category_
             n_cluster_length = row['cluster_length']
 
             #-------------------------------
-            #Check if line it is valid 
+            #Check if the line is valid 
 
             if re.match(pattern_line_column_plot, str(row[col])):  
                 
@@ -1311,12 +1368,13 @@ def check_structure_lines_column_plots(check_columns, result_df, plots_category_
                 #Processing plots
 
                 if plots_summary == 'sample_of_interest':
-                    sample_increase = row['samples_increase']   
+                    sample_increase = row['samples_increase']       
                 else:
                     sample_increase = ''
 
                 #---------------------------------
                 # Split informations
+
                 components_row = row[col].split(" (n =")[0].split(", ")
                 category = []
                 values = []
@@ -1372,12 +1430,12 @@ def check_structure_lines_column_plots(check_columns, result_df, plots_category_
                         list_values = values
 
                 #------------------------------------------
-                # Defenition of colors foe each category
+                # Definition of colors for each category
                 colors = []
                
                 for cat in list_category:
                     if cat not in category_colors:
-                        category_colors[cat] = generate_pastel_color()  #add the cat key and value generate_pastel_color
+                        category_colors[cat] = generate_pastel_color()  
                     colors.append(category_colors[cat])
                     
                 #-----------------------------------------
@@ -1390,7 +1448,7 @@ def check_structure_lines_column_plots(check_columns, result_df, plots_category_
                 fig.update_layout(title_x = 0.5, annotations = [dict(
                                             x = 0.5,
                                             y = -0.2,
-                                            text = f'Number of samples: {n_cluster_length}<br>{sample_increase}',showarrow=False)])  #evita que apareça a seta 
+                                            text = f'Number of samples: {n_cluster_length}<br>{sample_increase}',showarrow=False)])  
                 
                 fig.write_image(f'{output}/{prefix}_{mst}_{col}_{cluster_rename}.png', format="png")              
                 result_dict = {'A': mst, 'B': col, 'C': fig}    
@@ -1432,7 +1490,7 @@ def select_nomenclature_change(df_filtered_threshold, log):
     possibilities = ['kept (increase)','new','new (increase)', 'new (merge_increase)', 'new (split_increase)', 'new (split_merge_increase)']
     
     if 'nomenclature_change' in df_filtered_threshold.columns:
-        data = df_filtered_threshold['nomenclature_change'].values.tolist()  #give me a list with the values presents in the column above 
+        data = df_filtered_threshold['nomenclature_change'].values.tolist()   
         unique_list = set(data)
         
         for elem in unique_list:
@@ -1486,7 +1544,7 @@ def get_file_partition_by_threshold (partition_matrix, prefix, output, log):
     ---------
     partition_matrix: str
         Path to the *_partitions.tsv file.
-    Prefix: str
+    prefix: str
         Prefix to include in the output filename.
     output: str 
         Path to the directory where the results will be saved.
@@ -1519,7 +1577,7 @@ def get_file_partition_by_threshold (partition_matrix, prefix, output, log):
     
     return file_partition_by_threshold
 
-def get_graph_partition_by_threshold(file_partition_by_threshold, prefix, output, log):
+def get_graph_partition_by_threshold(file_partition_by_threshold, prefix, prefix_both, yes_prefix_both, output, threshold ,log):
 
     """
     Generate a graphic showing the number of partitions vs. thresholds
@@ -1541,14 +1599,33 @@ def get_graph_partition_by_threshold(file_partition_by_threshold, prefix, output
         
     """
     #print_log(f'\n---------------------------------------------- Function: get_graph_partition_by_threshold ----------------------------------------------\n', log)
-  
+
     df = pd.read_csv(file_partition_by_threshold, sep = '\t')
 
     fig_partition_vs_threshols=px.line(df, x = "threshold", y = "partitions", color = "pipeline",
-                             title = "Number of partitions per threshold",
                              labels = {'partitions': 'Partitions', 'threshold': 'Threshold'})
-    fig_partition_vs_threshols.update_layout(title_x = 0.5)
-    fig_partition_vs_threshols.write_image(f'{output}/{prefix}_lineplot.png', format = "png")
+    
+    if threshold != 'max':
+        values= threshold.split('-')
+        first_value=int(values[0])
+        second_value=int(values[1]) 
+        values_list= [str(i) for i in range(first_value, second_value + 1)]
+        n_elem=len(values_list)
+        index_list=list(range(0, n_elem))
+
+        text_list=['A']
+        for elem in values_list:
+            text_list.append(elem)
+
+        fig_partition_vs_threshols.update_layout(xaxis=dict(tickvals = index_list, ticktext=text_list))
+    
+    fig_partition_vs_threshols.update_layout(legend=dict (orientation="h",yanchor="bottom",y=-0.35,xanchor="center", x=0.5), margin=dict(l=0, r=0, t=20, b=0))
+
+    if yes_prefix_both == False:
+        fig_partition_vs_threshols.write_image(f'{output}/{prefix}_lineplot.png', format = "png")
+    
+    if yes_prefix_both == True:
+        fig_partition_vs_threshols.write_image(f'{output}/{prefix_both}_lineplot.png', format = "png")
     
     return fig_partition_vs_threshols
 
@@ -1563,14 +1640,14 @@ def concatenation_files(file1, file2, output, prefix_both):
         Path to the first TSV file.
     file2 : str
         Path to the second TSV file.
-    output : str
-        Directory where the combined file will be saved.
+    output: str
+        The directory where the combined file will be saved.
     prefix_both : str
         Prefix for naming the output file.
 
     Returns
     -------
-    path : str
+    path: str
         Full path to the saved concatenated file.
     """
     #print(f'\n---------------------------------------------- Function: concatenation_files----------------------------------------------\n')
@@ -1604,7 +1681,7 @@ def organize_clusters(results_list):
     Returns
     -------
     mst_groups : dict
-        Dictionary organized by threshold and then by category.
+        The dictionary is organized by threshold and then by category.
     """
     #print(f'\n---------------------------------------------- Function: organize_clusters----------------------------------------------\n')
     
@@ -1675,7 +1752,7 @@ def processing_data(file, log):
     final_data: list of int
         List of integers identifying the end of each stability block.
 
-    values_block : list of int
+    values_block: list of int
         Combined and sorted list of all start and end points.
     """
     #print_log(f'\n---------------------------------------------- Function: processing_data----------------------------------------------\n', log)
@@ -1697,24 +1774,22 @@ def processing_data(file, log):
         last_partition = value.split('x')[0]
         final_data.append(int(last_partition)) 
 
-    values_block = sorted(final_data + first_data)
-
-    return first_data, final_data, values_block
+    return first_data, final_data
 
 def change_processing_data(final_df, i1_prefix, i2_prefix, output, log):
 
     """
-    Convertion of dataframe values in logartimics to create the graph.
+    Conversion of dataframe values in logarithms to create the graph.
 
     Parameters
     ----------
-    final_df: <class 'pandas.core.frame.DataFrame'>
+    final_df: pd.DataFrame
         Dataframe with the start and end of each block per pipeline
 
-    i1_prefix: <class 'str'>
+    i1_prefix: str
         Prefix added to the result in pipeline i1
 
-    i2_prefix: <class 'str'>
+    i2_prefix: str
         Prefix added to the result in pipeline i2
     """
 
@@ -1741,21 +1816,19 @@ def change_processing_data(final_df, i1_prefix, i2_prefix, output, log):
                     orientation="h")
 
     fig_st.update_layout(
-                    xaxis_title="Distance threshold (ADs) <br> - log2 scale -",
-                    yaxis_title='Pipelines',
-                    title='Stability Regions',
-                    title_x=0.5,
-                    xaxis=dict(
-                    tickvals=list_tickvals,  
-                    ticktext=list_ticktext    
-    ))
-       
+                    xaxis_title = "Threshold",
+                    yaxis_title = '',
+                    xaxis = dict(
+                    tickvals = list_tickvals,  
+                    ticktext = list_ticktext), 
+                    yaxis = dict(showticklabels=False),  legend=dict( orientation="h",yanchor="bottom",y=-0.35,xanchor="center", x=0.5), margin=dict(l=0, r=0, t=20, b=0))
+           
     if i2_prefix is None:
-         prefix=f'{i1_prefix}_'
+         prefix=f'{i1_prefix}'
     else:
         prefix=f'{i1_prefix}_vs_{i2_prefix}'
 
-    fig_st.write_image(f'{output}/{prefix}_stability_regions.png', format='png')
+    fig_st.write_image(f'{output}/{prefix}_StableRegions.png', format='png')
 
 
     return fig_st
@@ -1772,7 +1845,7 @@ def validate_combinations_outbreak(threshold_outbreak):
     - "equal" (defined by ',')
     - "lower_equal" (defined by '<=')
 
-    Multiple combinations must be separated by semicolons (';'), witout spaces.
+    Multiple combinations must be separated by semicolons (';'), without spaces.
 
     This function processes one or more threshold pairs, extracting threshold_1, threshold_2, and  the comparison type.
 
@@ -1839,6 +1912,7 @@ def extract_integer_part(valid_combinations, log):
         to be used in the command-line call of the script `stats_outbreak_script.py`
     """
     #print_log(f'\n---------------------------------------------- Function: extract_integer_part----------------------------------------------\n', log)
+
     values_outbreak = []
 
     for p1, p2, comp in valid_combinations:
@@ -1879,12 +1953,10 @@ def creation_tsv_stats_outbreak(clusterComposition_1, clusterComposition_2, outp
     path_stats_outbreak=f'{output}/{prefix_both}_path_stats_outbreak.tsv'
     df.to_csv(path_stats_outbreak, sep='\t', index=False, header=None)
 
-    print_log(f"\tPreparing the input to the stats_oubreak_script.py", log)
-
     return df, path_stats_outbreak
                       
     
-def calling_script_outbreak(stats_outbreak_script, path_stats_outbreak, output, prefix_both, values_outbreak, log):
+def calling_script_outbreak(python,stats_outbreak_script, path_stats_outbreak, output, prefix_both, values_outbreak, log):
     
     """
     Calls the outbreak script.
@@ -1915,7 +1987,7 @@ def calling_script_outbreak(stats_outbreak_script, path_stats_outbreak, output, 
     if values_outbreak !=[]:
         for th1,th2,type_comparison in values_outbreak:
             
-            cmd= ["python", stats_outbreak_script, "-i", path_stats_outbreak, "-t1", str(th1), "-t2", str(th2),
+            cmd= [python, stats_outbreak_script, "-i", path_stats_outbreak, "-t1", str(th1), "-t2", str(th2),
             "-o", f"{output}/{prefix_both}_stats_outbreak", "-c", type_comparison]            
 
             subprocess.run(cmd,capture_output=True, text=True)
@@ -1985,7 +2057,7 @@ def creation_overlap_clusters(process_files, output, values_oubreak):
                 result.append([th1,thr2,type_compo,path])
 
     fig_result=[]   
-
+    thresholds=[]
     for i in result:
         file=i[3]
         thr1=i[0]
@@ -1994,20 +2066,27 @@ def creation_overlap_clusters(process_files, output, values_oubreak):
 
         df=pd.read_table(file) 
         df_filtered = df.drop(df.columns[0], axis=1)
-        values_col1 = df_filtered.columns[0]  #HC
-        values_col2 = df_filtered.columns[1]   #GT
-
+        
+        if df_filtered.shape[1] == 2:
+            values_col1 = df_filtered.columns[0]  
+            values_col2 = df_filtered.columns[1]  
+            
+        if df_filtered.shape[0] <= 2:
+            df_filtered[''] = ''
+            values_col1 = df_filtered.columns[0]
+            values_col2 = df_filtered.columns[1]
+            
         df_percentage= df_filtered*100
         name_file=os.path.basename(file)
         base, ext=os.path.splitext(name_file)
 
         if type_com=='equal':
-            string1=f'at {thr1} ADs'
-            string2=f'at {thr2} ADs'
+            string1=f'at {thr1} threshold'
+            string2=f'at {thr2} threshold'
         else:
-            string1=f'at {thr1} ADs'
-            string2=f'at up {thr2} ADs'
-
+            string1=f'at {thr1} threshold'
+            string2=f'at up {thr2} threshold'
+        thresholds.append((thr1,thr2,type_com))
         
         colors = [[0, 'white'], [0.5, 'white'], [0.5, '#FDFD96'], [1, '#89B6E3']]  
 
@@ -2027,13 +2106,12 @@ def creation_overlap_clusters(process_files, output, values_oubreak):
             xaxis_title=f"Cluster detected {string2}",
             yaxis_title=f"Cluster detected {string1}",
             plot_bgcolor='white',  
-            paper_bgcolor='white'   
-        )
+            paper_bgcolor='white', margin=dict(l=0, r=0, t=20, b=0))
 
         fig.write_image(f'{output}/{base}.png', format="png")
         fig_result.append(fig)
-    
-    return fig_result
+        
+    return fig_result, thresholds
 
 def get_plot_columns(file):
 
@@ -2044,8 +2122,6 @@ def get_plot_columns(file):
     ----------
     file: str
         Path to the *_partitions_summary.tsv or *_SAMPLE_OF_INTEREST_partitions_summary.tsv file.
-    list_column_plot: str
-        Type of file that the user wants to vizualize the columns names. 
 
     Return
     ------
@@ -2070,7 +2146,6 @@ def get_plot_columns(file):
     if attachement_list != []:   
         for elem in attachement_list:
             print(f'\t- {elem}')
-            #print(f"Columns found: {', '.join(attachement_list)}\n")
     else:
         sys.exit(f'Error: No additional columns found in {file}.')       
    
@@ -2095,7 +2170,7 @@ def find_html_outbreak(output,prefix_both,log):
     
     all_files = os.listdir(output) 
 
-    expected_new_report = f"{prefix_both}_NEW_report.html"
+    expected_new_report = f"{prefix_both}_2ºRUN_report.html"
     expected_report = f"{prefix_both}_report.html"
 
     if expected_new_report not in all_files:
@@ -2131,7 +2206,8 @@ def extration_section_original_file(output, final_files, log):
     original = final_files[1]
     original_file = f'{output}/{original}'
    
-    line = 81
+    line = 73
+
     with open(original_file, "r") as f:
         lines = f.readlines()
 
@@ -2172,7 +2248,7 @@ def transfer_info_to_html_content(path_temp, html_content, log):
         #print_log(path_temp, log)
         with open(path_temp, 'r') as input_file:
             content = input_file.read()
-            #print_log(content,log)
+           
     else:
         print_log('There was a problem with the creation of the file containing information about clustering and congruence for the second HTML report.', log)
     html_content = content
@@ -2188,18 +2264,19 @@ def reading_sequence_type(sequence_type_file, output, prefix_st, log):
 
     Parameters
     ----------
-    sequence_type: <class 'str'>
+    sequence_type: str
         Full path to the sequence type matrix.
 
     output: str
         Path to the directory where the results will be saved.
 
-    prefix_st: <class 'str'>
-    
+    prefix_st: str
+    	The prefix that will be added to the file.
+     
     Returns
     -------
-    fig: <class 'plotly.graph_objs._figure.Figure'>
-        Code to produce
+    fig: plotly.graph_objs._figure.Figure
+        Code to produce figure
     """
 
     #print_log(f'\n---------------------------------------------- Function: reading_sequence_type----------------------------------------------\n', log)
@@ -2232,16 +2309,17 @@ def create_html(log, file_path_report):
 
     """
     Opening HTML file to save the dynamic graphs of the various analyses.
+    
     Parameters
     ----------
     log: <class '_io.TextIOWrapper'>
 
-    file_path_report: <class 'str'>
+    file_path_report: str
         Full path to the HTML file with all analysis results.
 
     Return
     ------
-    html_content: <class 'str'>
+    html_content: str
         It contains the body of an HTML document.
 
     """
@@ -2260,17 +2338,10 @@ def create_html(log, file_path_report):
     <style>
         body {{ font-family: Arial, sans-serif; margin: 20px; }}
         section {{ margin: 20px 0; }}
-    
-        .image{{
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }}
+
         
-        /* ------------------------- imagens  CLUSTERING------------------------------------------- */
-        .image-row {{  /* para por em linha */
+        /* ------------------------- CLUSTERING images------------------------------------------- */
+        .image-row {{  
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
@@ -2281,7 +2352,7 @@ def create_html(log, file_path_report):
             flex: 1 1 calc(25% - 20px); 
             box-sizing: border-box;
             margin: 10px;
-            max-width: calc(25% - 20px); /* força todas a mesma largura */                
+            max-width: calc(25% - 20px);                 
         }}
 
         /* --------------------------- START Accordion ------------------------------------------- */
@@ -2296,33 +2367,31 @@ def create_html(log, file_path_report):
             outline: none; 
             font-size: 20px;
             transition: 0.4s;
-            font-weight: bold; /* Adiciona negrito */
+            font-weight: bold; 
         }}
         .active, .accordion:hover {{background-color: #ccc;}}
 
-        .panel {{ padding: 0 18px;
+        .panel {{ padding: 0 10px;
             display: none;
             background-color: white;
             overflow: hidden;}}
 
         /* --------------------------- END Accordion ------------------------------------------- */
 
-        /* --------------------------- START heatmap ------------------------------------------- */
         .image-heatmap {{
             display: flex;
             justify-content: space-around;
             margin-top: 20px;
             flex-wrap: wrap;
         }}
-        /* --------------------------- END heatmap ------------------------------------------- */
 
+        .compact {{margin: 2px 0; line-height: 1.2;}}
     </style>
 </head>
 <body>
     <header>
-        <h1>Report</h1>
-        <p>EvalTree: toolbox for comparative clustering evaluation of 
-        whole genome sequencing pipelines for bacteria routine surveillance</p>
+        <h1>EvalTree Report</h1>
+        <p> Toolbox for comparative clustering evaluation of whole genome sequencing pipelines for bacteria routine surveillance</p>
     </header>"""
 
     return html_content
@@ -2341,10 +2410,10 @@ def body_html(start, command_line,version):
 def get_sequence_type(prefix_st,samples_st,groups_st,sequence_type_file):
 
     html_content=f"""
-    <button class="accordion">Pipeline {prefix_st}</button> 
+    <button class="accordion">Pipeline characterization: {prefix_st}</button> 
         <div class="panel">
-            <p>Nr of samples: {samples_st} </p>
-            <p>Nr of groups:{groups_st} </p>
+            <p>Number of samples: {samples_st} </p>
+            <p>Number of groups:{groups_st} </p>
             <p> Name of file: {sequence_type_file}</p>
     """
     return html_content
@@ -2358,14 +2427,17 @@ def sequence_type_image(fig_html):
 
 def get_partitions_threshold(prefix_single, nr_lines_df, nr_columns_df, fig_partition_vs_threshols):
 
-    fig_pt=pio.to_html(fig_partition_vs_threshols,include_plotlyjs=False, full_html=False)
-   
-    html_content= f"""<button class="accordion">Pipeline {prefix_single}</button> 
+    fig_partition_vs_threshols.update_layout(margin=dict(l=0, r=0, t=20, b=0))
+    fig_pt=pio.to_html(fig_partition_vs_threshols, include_plotlyjs='cdn', full_html=False)
+    
+    html_content= f"""<button class="accordion">Pipeline characterization: {prefix_single}</button> 
         <div class="panel">
-        <h3>Summary: {prefix_single}</h3>
-        <p>Nr of samples: {nr_lines_df}</p>
-        <p>Nr of thresholds: {nr_columns_df}</p>  
-        <div>{fig_pt}</div>    
+        <h3> Summary: {prefix_single} </h3>
+        <p> Number of samples: {nr_lines_df} </p>
+        <p> Number of thresholds: {nr_columns_df} </p> 
+        <h3> Number of partitions per threshold </h3> 
+        <div> {fig_pt} </div>  
+        <p> This line plot shows the number of partitions (groups) at each threshold. </p>  
     """
     return html_content
 
@@ -2373,13 +2445,12 @@ def get_clusters(mst_groups, prefix):
 
     """
     Display pie charts by threshold and category, generating CLUSTER HTML content for each pipeline.
-    Get clusters() use the data processed from def process_df_to_plots() AND def organize_clusters(),that are explained above.
-
+    
     Parameters
     ----------
 
-    mst_groups:
-
+    mst_groups: dict
+	Categories and images.
     prefix: str
         Prefix the name of the file that is being processed.
 
@@ -2389,7 +2460,7 @@ def get_clusters(mst_groups, prefix):
     """
 
     html_content=''
-    html_content +=f'<button class="accordion">Clusters {prefix} </button>\n'
+    html_content +=f'<button class="accordion"> ReporTree clustering visualization: pipeline {prefix} </button>\n'
     html_content +=f'<div class="panel">\n'
     
     for mst, categories in mst_groups.items():
@@ -2402,10 +2473,10 @@ def get_clusters(mst_groups, prefix):
             html_content+=f'<div class="image-row">\n'   
 
             for image in images:
-                width_percent = 25
-                fig_html=pio.to_html(image, include_plotlyjs = False, full_html = False)
-                #html_content += f'<div class="image-item">{fig_html}</div>\n' 
-                html_content += f'<div class="image-item" style="flex: 0 0 {width_percent}%; max-width: {width_percent}%;">{fig_html}</div>\n'
+                #width_percent = 25
+                fig_html=pio.to_html(image, include_plotlyjs = 'cdn', full_html = False)
+                html_content += f'<div class="image-item">{fig_html}</div>\n' 
+                #html_content += f'<div class="image-item" style="flex: 0 0 {width_percent}%; max-width: {width_percent}%;">{fig_html}</div>\n'
                  
             html_content += f"</div>\n" 
         html_content += f'</div>\n'
@@ -2417,49 +2488,87 @@ def get_clusters(mst_groups, prefix):
 def summary_congruence():
 
     html_content=f"""
-    <button class="accordion">Congruence</button> 
-        <div class="panel">
-        <p> This section makes it possible to evaluate the congruence of the two genomic pipelines. </p>
+    </div>
+    <button class="accordion">Inter-pipeline cluster congruence</button> 
+        <div class="panel" >
+       <p > This section evaluates the clustering congruence between two WGS-based pipelines by comparing their cluster compositon at all possible threshold levels.
+       The goal is to assess how similarly the pipelines group the isolates, by measuring the consistency of cluster assignments at each threshold. 
+        
+        More detailed information is available on the
+        <a href="https://github.com/insapathogenomics/CENTAUR/tree/main/EvalTree" target="_blank" rel="noopener noreferrer">
+            EvalTree GitHub 
+        </a>.
+    </p>
+        
     """
     return html_content
 
-def summary_partition_threshold(fig_html_partition_threshold):
+def summary_partition_threshold(fig_html_partition_threshold, prefix_both):
 
     html_content=f"""
-        <div>{fig_html_partition_threshold}</div>
+        <h3> Number of partitions per threshold </h3>
+        <div> {fig_html_partition_threshold} </div>
+        <p class="compact"> The line plot shows the number of partitions  at each threshold.</p>
+        <p class="compact"> Detailed information is available in the <code> {prefix_both}_cluster_partitions.tsv</code> file.</p>
     """
     return html_content
    
-def congruence_stability(fig_html_st):
+def congruence_stability(fig_html_st, prefix, prefix_2, n_stability, thr_stability):
    
     html_content=f"""
-        <h3> Stability </h3>
+        <h3> Blocks of stability regions </h3>
         <div>{fig_html_st}</div>
+        <p class="compact"> For each pipeline, clustering stability regions are defined as a range of thresholds e.g., {n_stability} with a nAWC of  e.g., {thr_stability} which cluster composition remains stable/consistent. </p>
+        <p class="compact"> To better distinguish each region (represented by separated rectangle blocks), the blocks are vertically offset, starting on a different line. </p> 
+        <p class="compact"> Distance thresholds (x axis) are presented in log2 scale. </p>
+        <p class="compact"> Detailed information is available in the following files: </p>
     """
+    
+    html_content += f"- <code>{prefix}_metrics.tsv"
+    if prefix_2 is not None:
+        html_content += f" and {prefix_2}_metrics.tsv"
+    html_content += f": summarizes all comparisons between consecutive pairs of thresholds (“n + 1” → “n”).</code>"
+    
+    html_content += f"<br>- <code>{prefix}_StableRegions.tsv"
+    if prefix_2 is not None:
+        html_content += f" and {prefix_2}_StableRegions.tsv"
+    html_content += f": lists the block names, their respective threshold range, and the length of each block.</code>"
+
+
     return html_content
     
-def congruence_heatmap(fig_html_heatmap, prefix_both_files):
+def congruence_heatmap(fig_html_heatmap, prefix_both):
+
+    split_prefix=prefix_both.split('_')
+    first=split_prefix[0]
+    second=split_prefix[-1]
 
     html_content=f"""
         <h3> Congruence score </h3>
         <div class='image-heatmap'>{fig_html_heatmap} </div>
-            <p> Heatmap with the congruence score (CS) obtained for the comparison of the clustering results obtained at all possible thresholds of {prefix_both_files} pipelines</p>
-           
-            <p> The CS is a metric ranging from 0 (no congruence between methods) to 3 (absolute congruence, where the methods are in perfect agreement).</p>
-            <p> A high CS indicates that the genomic pipelines produce similar clustering results.</p>
-            <p> A lower CS indicates that the pipelines give divergent results, which may reflect differences in the methodologies.</p>
+            <p class="compact"> The heatmap shows a pairwise comparison of clustering results from two pipelines, {first} and {second}, at all possible distance thresholds. </p>
+            <p class="compact"> The congruence score (CS) is a metric ranging from 0 (no congruence between methods) to 3 (absolute congruence).</p>
+            <p class="compact"> Detailed information is available in the <code> {prefix_both}_final_score.tsv </code> file.</p>
     """
     return html_content
 
-def congruence_tendency(fig_tendency_html):
+def congruence_tendency(fig_tendency_html, score_value, prefix_both, nr_point_method_1, nr_point_method_2):
+
+    pipeline1=prefix_both.split('_vs_')[0]
+    pipeline2=prefix_both.split('_vs_')[-1]
 
     html_content= f"""
-        <br>
-        <h3> Correspondence points </h3>
-            <div>{fig_tendency_html} </div>
-            
-            <p> Tendency with a line slop near 1, suggest that both methods are poducing cluster results very similares. </p>
-            <p> Significant deviations from the trend line (e.g. a slope less than 1) may indicate that one method has greater resolution or discrimination than the other.</p>
+        <h3> Corresponding points </h3>
+            <div> {fig_tendency_html} </div>
+            <p class="compact"> This graph shows the corresponding points(thresholds) between the two pipelines in both directions above (CS >= {score_value}). </p>      
+            <p class="compact"> When comparing a set of samples between two pipelines, the probability of two sample clustering together in one method/pipeline in a given threshold
+            may not to be the same in the other method/pipeline. Therefore:</p>
+            <p class="compact"> - First, the threshold in the {pipeline1} pipeline (method 1) that produces clustering results most similar to those in the {pipeline2} pipeline (method 2) is identified. </p>
+            <p class="compact"> - Then, the threshold in the {pipeline2} pipeline (method 1) that produces clustering results most similar to those in the {pipeline1} pipeline (method 2) is identified.</p>
+            <p class="compact"> Both methods produce similar clustering results when the tendency line has a slope near 1. </p>
+            <p class="compact">A linear tendency line supported by {nr_point_method_1} (blue) and {nr_point_method_2} (orange) points is presented. </p>
+            <p class="compact"> Detailed information is available in the <code> {prefix_both}_All_correspondence.tsv </code> file. </p>
+            <p style="margin-bottom: 8px;"></p>
         </div>
     """
     return html_content
@@ -2488,24 +2597,52 @@ def html_tradicional_typing(n_samples,n_groups, prefix):
     """
     return html_content
 
-def summary_outbreak(fig_result):
+def image_outbreak(fig_result):
 
-    time.sleep(5)
+   
     html_content=''
     html_content +=f'<button class="accordion">Outbreak</button>'
-    html_content +=f'<div class="panel">'
-    html_content += f'<h3> Clusters composition</h3>'
+    html_content +=f'<div class="panel">' 
     html_content+=f'<div class="image-row">\n'
     
     for fig in fig_result:
-        #fig_html=pio.to_html(fig,full_html=False, include_plotlyjs=False)  
-        fig_html=fig.to_html(full_html=False, include_plotlyjs='cdn')
-        html_content += f'<div class="image-item">{fig_html}</div>'
-    html_content+='</div>'
+        fig_html=pio.to_html(fig, full_html=False, include_plotlyjs='cdn')  
+        html_content += f'<div class="image-item">{fig_html}</div>' 
+    #html_content+='</div>'
     html_content+='</div>'
     
     return html_content
 
+def summary_outbreak(prefix_both, thresholds):
+    
+    html_content=f"""
+    <p class="compact">Determines the percentage of clusters identified in a pipeline at a given threshold that could be detected with the same composition by another pipeline at a similar or even higher threshold.</p>   
+    """
+    for elem in thresholds:
+        string1, string2, type_com = elem
+        html_content += f"""<p class="compact"> Detailed information is available in the <code> {prefix_both}_stats_outbreak_summary_{string1}_{type_com}_{string2} file.</code></p>"""
+        html_content += f"""<p class="compact"> Detailed information is available in the <code> {prefix_both}_stats_outbreak_pairwise_comparison_{string1}_{type_com}_{string2} file.</code></p>"""
+    html_content += f"""</div> """
+    
+    return html_content
+
+def references():
+
+    html_content = f"""
+    <p style="font-size: 10pt;"> <strong> References:</strong> </p>
+    <p style="font-size: 8pt;"><a href="https://doi.org/10.1038/s41467-025-59246-8" target="_blank">Mixão V et al. (2025). Multi-country and intersectoral assessment of cluster congruence between pipelines for genomics surveillance of foodborne pathogens. <em>Nature Communications</em>, 16, Article 3961.</a></p>
+    <p style="font-size: 8pt;"> EvalTree relies on the work of other developers. So you must also cite: </p>
+    <p style="font-size: 8pt;"> -<a href="https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-023-01196-1"> Mixão V et al. (2023). ReporTree: a surveillance-oriented tool to strengthen the linkage between pathogen genetic clusters and epidemiological data.</a></p>
+    <p style="font-size: 8pt;"> -<a href="https://journals.asm.org/doi/10.1128/jcm.02536-05?permanently=true"> Carriço J et al. (2006). Illustration of a Common Framework for Relating Multiple Typing Methods by Application to Macrolide-Resistant Streptococcus pyogenes.</a></p>
+   <br></br>
+    <p style="text-align: center; max-width: 1000px; margin: 0 auto;">
+        <em>EvalTree.py</em> is a tool developed in the frame of the <strong>CENTAUR project</strong> (supported by the European ISIDORe initiative) at the
+        Genomics and Bioinformatics Unit of the Department of Infectious Diseases in the National Institute of Health Dr. Ricardo Jorge (INSA, Portugal).
+    </p>
+
+    """
+
+    return html_content
 def javascript_function():
 
     html_content=f"""
@@ -2531,23 +2668,22 @@ def javascript_function():
 def write_html(html_content, file_path_report, log):
     
     """
-    Start of writing
+    Writing HTML
 
     Parameters
     ----------
-    html_content: class 'str'
-        Code of html report
+    html_content: str
+        Code of HTML report.
 
-    file_path_report: class 'str'
-        Path of the report  html file
+    file_path_report: str
+        Path of the report  HTML file.
     Return
     -----
-    file_path_report: class 'str'
-        HTML file with results
+    file_path_report: str
+        HTML file with results.
     """
     #print(f'\n---------------------------------------------- Function: write_html----------------------------------------------\n')
 
-    #Save the content in a HTML file
     with open(file_path_report, "w") as file:
         file.write(html_content)
     print_log(f"\nReport successfully generated in:\n {file_path_report}.\n", log)     
@@ -2565,7 +2701,7 @@ def close_painel(prefix, message=None):
     """
 
     if message:
-        html_content += f'<p>Error: {message}</p>\n'
+        html_content += f'<p>{message}</p>\n'
 
     html_content += "</div>\n"
     html_content += "</div>\n"
@@ -2578,6 +2714,16 @@ def print_log(message, log):
 
 	print(message)
 	print(message, file = log)
+
+
+
+def is_folder_empty(folder_path):
+    """
+    Checks if a folder exists and is empty.
+    """
+    if os.path.exists(folder_path) and not os.listdir(folder_path):
+        sys.exit(f"The folder '{folder_path}' exists but is empty. Execution will be stopped.") 
+
 
 #####################################################################################################################################
 ###################################################################***###############################################################
@@ -2632,7 +2778,7 @@ def main():
             action = "store",
             required = True,
             help = '[MANDATORY] Specifies the first input type (folder or file), requiring the full path. \
-                    The folder must contain the partition matrix file with clustering data, and is highly recommended to be a Reportree output folder containing all relevant analysis files.\
+                    The folder must contain the partition matrix file with clustering data, and is highly recommended to be a Reportree output folder.\
                     Alternatively, the file can be a traditional sequence-type matrix or a partition matrix.\
                     Using either of these input types enables the analysis.')
 
@@ -2640,14 +2786,14 @@ def main():
             action = "store", 
             required = False,
             help = '[OPTIONAL] Specifies the second input type (folder or file), requiring the full path. \
-                    The folder must contain the partition matrix file with clustering data, and is highly recommended to be a Reportree output folder containing all relevant analysis files. \
+                    The folder must contain the partition matrix file with clustering data, and is highly recommended to be a Reportree output folder. \
                     Alternatively, the file can be a traditional sequence-type matrix or a partition matrix. \
                     Using either of these input types enables the analysis.')
     
     parser.add_argument("-o", "--output",
             action = "store",
-            required = True,
-            help = '[MANDATORY] Specifies the output directory for storing all analysis results.')
+            help = '[OPTIONAL] Specifies the output directory for storing all analysis results. \
+                    If no folder is provided, the program will automatically create one based on the prefix of the files.')
 
     # Optional arguments
     parser.add_argument('-s', '--score',
@@ -2668,7 +2814,7 @@ def main():
             dest = 'plots_summary', 
             choices = ['partitions_summary','sample_of_interest'], 
             default = 'partitions_summary',
-            help = '[OPTIONAL] Specifies the type of cluster characterization file (*_partition_summary.tsv or *_SAMPLES_OF_INTEREST_partitions_summary.tsv), both of which are expected to be located within a Reportree results folder. \
+            help = '[OPTIONAL] Specify the type of cluster characterization file (partitions_summary.tsv or SAMPLES_OF_INTEREST_partitions_summary.tsv), both of which are expected to be located within a Reportree results folder. \
                     Using the partition_summary option, the largest clusters present in the file will be characterized. \
                     Alternatively, the samples_of_interest option will characterize all clusters, including those resulting from the addition of new samples (kept increase, new, new (increase), new (merge_increase), new (split_increase), new (split_merge_increase)).')
            
@@ -2676,7 +2822,7 @@ def main():
             dest = 'n_cluster',
             type = int,
             default = 3,
-            help = '[OPTIONAL] Specifies the number of top clusters to be displayed from the *_partition_summary.tsv file, which must be located within a Reportree results folder. \
+            help = '[OPTIONAL] Specify the number of top clusters to be displayed from the partitions_summary.tsv file, which must be located within a Reportree results folder. \
                     This argument is not applicable when using the samples_of_interest option.')
     
     parser.add_argument('-cp', '--columns_plots', 
@@ -2686,7 +2832,7 @@ def main():
     
     parser.add_argument('-pt','--plots_threshold',
             dest='plots_threshold',
-            help='[OPTIONAL] Identifies the integer threshold(s) to be applied to the file specified by the plots_summary argument. \
+            help='[OPTIONAL] Identify the integer threshold(s) to be applied to the file specified by the plots_summary argument. \
                     For multiple thresholds, indicate them separated by commas without spaces (e.g., X,Y,Z). \
                     This generates a pie chart showing the clustering data for the specified threshold(s), according to the columns_plot argument.')
 
@@ -2694,14 +2840,14 @@ def main():
             dest='plots_category_number',
             default=5,
             type=int,
-            help='[OPTIONAL] Determines the number of plot categories in the *_partition_summary.tsv or *_sample_of_interest_partition_summary.tsv file\
+            help='[OPTIONAL] Determines the number of plot categories in the partitions_summary.tsv or SAMPLES_OF_INTEREST_partitions_summary.tsv file\
             that are intended to be collapsed into the '"Other"' category for visualization in the cluster plots.\
             When there are more than 5 slices (default), they will be combined into one category named Other')
     
     parser.add_argument('-pcp','--plots_category_percentage',
             dest='plots_category_percentage',
             type=float,
-            help='[OPTIONAL] Determines the percentage of plot categories in the *_partition_summary.tsv or *_sample_of_interest_partition_summary.tsv file\
+            help='[OPTIONAL] Determines the percentage of plot categories in the partitions_summary.tsv or SAMPLES_OF_INTEREST_partitions_summary.tsv file\
             that are intended to be collapse into the '"Other"'category for visualization in the cluster plots.\
             Slices plots with a lower percentage than the entered plots_category_percentage will be combined into one category named Others')
     
@@ -2718,26 +2864,43 @@ def main():
                     - ''equal'': Used to assess whether a cluster is detected at a given threshold by another pipeline. \
                         Use a comma '','' to separate threshold1,threshold2. Example of expression: MST-7x1.0,MST-7x1.0.\
                     - ''lower_equal'': Used to assess whether a cluster is detected up to a given threshold in another pipeline. \
-                        Use <= between threshold1<=threshold2. Example of expression: MST-7x1.0<=MST-9x1.0.\
+                        Use <= between threshold1<=threshold2. Example of expression: MST-7x1.0,<=MST-9x1.0.\
                             \
                 For multiple pair of threshold values, use '';'' as a separator. Example of expression: "MST-7x1.0,MST-7x1.0;<=MST-7x1.0,MST-10x1.0" represents two pair of threshold values.')
     
     parser.add_argument('-list', '--list',
             dest='list',
             choices=['partitions_summary','sample_of_interest'],
-            help='[OPTIONAL] Specify the names of the columns present in the *_partition_summary.tsv or *_SAMPLE_OF_INTERES_partition_summary.tsv file.')
+            help='[OPTIONAL] Specify the names of the columns present in the partitions_summary.tsv or SAMPLES_OF_INTEREST_partitions_summary.tsv file.')
 
     parser.add_argument('-rto','--repeat_threshold_outbreak',
             dest='repeat_threshold_outbreak',
             action="store_true",
-            help='[OPTIONAL] This argument can only be used after of a previous analysis of threshold_outbreak. ')
+            help='[OPTIONAL] This argument can only be used after of a previous analysis of threshold_outbreak.')
+    
+    parser.add_argument('-v', '--version',
+            action='version',
+            version='EvalTree 0.1.3, last update 2025-07-25', 
+            help='[OPTIONAL] Specify the version number of EvalTree.')
+    
+    parser.add_argument('-n_stab', '--n_stability',
+            dest = 'n_stability',
+            default = 5,
+            type = int,
+            help = '[OPTIONAL] Range of threshold which the cluster composition can be conistent/stable.')
+    
+    parser.add_argument('-thr_stab', '--thr_stability',
+            dest = 'thr_stability',
+            default = 0.99,
+            type = float,
+            help = '[OPTIONAL] The neighborhood Adjusted Wallace Coefficient (nAWC) threshold used to determine if a clustering threshold is considered consistent or stable.')
     
     #------------------------------------------------------------------
     # INITIAL INFORMATIONS    
     # Read the command line arguments and retrieve paths
 
     args = parser.parse_args()
-    path_toolbox_script, directory_toolbox = get_path_toolbox()
+    path_toolbox_script, directory_toolbox, python = get_path_toolbox()
     comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, stats_outbreak_script = get_path_other_scripts(directory_toolbox)
     
     #------------------------------------------------------------------
@@ -2760,6 +2923,9 @@ def main():
     if folders !=[]:
 
         for folder in folders:
+            is_folder_empty(folder)   # Check if THE folder is empty. If true, exit. 
+
+        for folder in folders:
             print(f"\tFolder: {folder}")
             partitions, partitions_summary, sample_interest, clusterComposition, prefix, input_path, stable_region = check_folder(folder)
             data_folder += [[partitions, prefix, input_path, partitions_summary, sample_interest, clusterComposition, stable_region]]  #7
@@ -2774,7 +2940,8 @@ def main():
     
     #----------------------------------------------------------------
     #   I2- Check the output argument (-o)
-    output = check_output(args.output)
+    if args.output != None:
+        output = check_output(args.output)
 
     #----------------------------------------------------------------
     #   I3- Check the list argument (-list)
@@ -2832,9 +2999,11 @@ def main():
     plots_summary_arg = args.plots_summary
     plots_category_percentage = args.plots_category_percentage
     plots_category_number = args.plots_category_number
+    n_stability = args.n_stability
+    thr_stability = args.thr_stability
 
     #----------------------------------------------------------------
-    #  I7- Check the threshold outbreak (-to) repeat_threshold_outbreak (-rto) arguments
+    #  I7- Check the threshold outbreak (-to)  and repeat_threshold_outbreak (-rto) arguments
     
     threshold_outbreak = args.threshold_outbreak   
     repeat_threshold_outbreak = args.repeat_threshold_outbreak   
@@ -2851,14 +3020,30 @@ def main():
     # III- Validation of file prefixes provided in different inputs
    
     data_folder, data_files, prefix_both = check_data_folders_file(data_folder, data_files)
-   
+           
     #---------------------------------------------------------
     # IV- Validation of partition matrix  FUNDAMENTAL
       
     inputs_variables = join_inputs_variables(data_folder,data_files)
- 
+   
+    #--------------------------------------------------------------------------------------------------
+    # V - Rename ouput folder if it was automatically created
+    if args.output == None:
+        output_folder = prefix_both 
+
+        path_folder = os.path.abspath(output_folder)
+        if os.path.exists(path_folder):
+            sys.exit("Error: a folder with that name already exists. Please provide a folder name using the -o argument to save the results.")
+
+        os.makedirs(output_folder)
+        path_folder=os.path.abspath(output_folder)
+        if not os.path.isdir(path_folder):
+            sys.exit("Critical error: the folder was not created successfully. Please provide a folder name using the -o argument to save the results.")
+        
+        output = path_folder
+
     #---------------------------------------------------------
-    # V- Validation of congruence
+    # VI- Validation of congruence
     go_congruence = False     
    
     if len(inputs_variables) == 2:
@@ -2873,9 +3058,12 @@ def main():
 
 
     #---------------------------------------------------------------------------------------------------
-    # VI- Outbreaks ( -rto) 
+    # VII- Outbreaks (-rto) 
 
     if repeat_threshold_outbreak is not False:
+        
+        if args.output is None:
+            sys.exit('Error: Please specify the output folder with the -o argument. It should contain the previous results (e.g outbreak analysis).')  
         
         file=glob.glob(os.path.join(output,'*_report.html'))
         if not file: 
@@ -2884,25 +3072,32 @@ def main():
         if not threshold_outbreak:
             print('\tDo not forget the double quotation marks!')
             sys.exit("Error: You must specify a new argument for the threshold_outbreak (-to).")   
+    
+    #---------------------------------------------------------------------------------------------------
+    # VIII - Stable Regions (-thr_stab)
+
+    if thr_stability != 0.99:
+        if not (0 <= thr_stability <= 1):
+            sys.exit("Error: thr_stability must be between 0 and 1.")
 
     #--------------------------------------------------------------------------------------------------
     # Starting logs	
     
     if not repeat_threshold_outbreak:
-        log_name = (f'{args.output}/{prefix_both}.log')
+        log_name = (f'{output}/{prefix_both}.log')
         log = open(log_name, "w+")
 
     else:     
-        log_name = (f'{args.output}/{prefix_both}_reanalyse.log')
+        log_name = (f'{output}/{prefix_both}_reanalyse.log')
         log = open(log_name, "w+")
 
     # -------------------------------------------------------------------------------------------------------------------------
     # INITIAL INFORMATIONS
 
-    print("---------------------------------------------- Running ToolBox.py ----------------------------------------------\n")
+    print("---------------------------------------------- Running EvalTree.py ----------------------------------------------\n")
     print_log(f"Version " + str(version) + " last updated on " + str(last_updated)+"\n", log)
     command_line = " ".join(sys.argv)
-    print_log(f"Running ToolBox with the following command: {command_line}\n", log)
+    print_log(f"Running EvalTree with the following command: {command_line}\n", log)
     print_log(f'Log file name: {log_name}\n', log)
     start = datetime.datetime.now()
     print_log("Start: " + str(start)+"\n", log)
@@ -2916,7 +3111,7 @@ def main():
         html_content = create_html(log, file_path_report)
         html_content += body_html(start, command_line,version)  
     else:
-        file_path_report = os.path.join(output, f'{prefix_both}_NEW_report.html')
+        file_path_report = os.path.join(output, f'{prefix_both}_2ºRUN_report.html')
         html_content = create_html(log, file_path_report)
         html_content += body_html(start, command_line,version)    
         html_report = write_html(html_content,file_path_report, log)
@@ -2941,7 +3136,7 @@ def main():
                         prefix_st = sub[1]
                         html_content += get_sequence_type(prefix_st,samples_st,groups_st,sequence_type_file)
                         fig_clusters = reading_sequence_type(sequence_type_file, output, prefix_st, log)
-                        fig_html = pio.to_html(fig_clusters, include_plotlyjs=False, full_html=False)
+                        fig_html = pio.to_html(fig_clusters, include_plotlyjs='cdn', full_html=False)
                         html_content += sequence_type_image(fig_html)
 
         #-------------------------------------------------------------------------------------------------------------------------------       
@@ -2973,7 +3168,8 @@ def main():
                         file_partition_by_threshold = get_file_partition_by_threshold (partition_matrix,  prefix, output, log)
                         list_partition_by_threshold.append(file_partition_by_threshold)
                         print_log(f'\tObtaining the number of partitions per threshold.', log)
-                        fig_partition_vs_threshols = get_graph_partition_by_threshold(file_partition_by_threshold, prefix, output, log)
+                        yes_prefix_both=False
+                        fig_partition_vs_threshols = get_graph_partition_by_threshold(file_partition_by_threshold, prefix, prefix_both, yes_prefix_both, output, threshold, log)
                         html_content += get_partitions_threshold(prefix, nr_lines_df, nr_columns_df, fig_partition_vs_threshols)
                         
 
@@ -2981,7 +3177,7 @@ def main():
                     html_content += f'</div>\n'  
 
                 #----------------------------------------------------------------------- 
-                # MODULE 3 - REPORTREE
+                # MODULE 3 - REPORTREE clustering visualization
                 if len(sub) == 7:  #folder
                     partitions_summary = sub[3]
                     sample_interest = sub[4]
@@ -3046,8 +3242,8 @@ def main():
                                     html_content += close_painel(prefix,"Error: The plot_threshold argument is invalid, without clustering analysis.")
                                     print_log(f'\tError: The plot_threshold argument is invalid, without clustering analysis. ', log)
                             else:
-                                html_content += close_painel(prefix,"Error: No analysis method provided, without clustering analysis.")
-                                print_log(f"\tError: No analysis method provided, without clustering analysis.",log)
+                                html_content += close_painel(prefix,"Error: The method provided is not available, without a clustering analysis.")
+                                print_log(f"\tError: The method provided is not available, without a clustering analysis.",log)
                         else:
                             html_content += close_painel(prefix,"Error: Impossible to order the Dataframe by cluster length,  without clustering analysis.")
                             print_log(f'\tError: Impossible to order the Dataframe by cluster length, without clustering analysis.')
@@ -3064,11 +3260,11 @@ def main():
                 if len(list_partition_by_threshold) == 2:
                     file1, file2 = list_partition_by_threshold
                     path = concatenation_files(file1, file2, output, prefix_both)
-                    fig = get_graph_partition_by_threshold(path, prefix, output, log)
-
+                    yes_prefix_both=True
+                    fig = get_graph_partition_by_threshold(path, prefix, prefix_both, yes_prefix_both, output, threshold, log)
                     print_log(f"\tPlotting the number of partitions per threshold for the two pipelines ...", log)
-                    fig_html = pio.to_html(fig, include_plotlyjs=False, full_html=False)
-                    html_content += summary_partition_threshold(fig_html)
+                    fig_html = pio.to_html(fig, include_plotlyjs='cdn', full_html=False)
+                    html_content += summary_partition_threshold(fig_html, prefix_both)
 
         #----------------------------------------------------------------------- 
         # MODULE 4.2 - Stability regions #or (len(sub)==6 and sub[3]==True):  
@@ -3086,16 +3282,15 @@ def main():
             if len(sub) == 7:   #folders
                 stable_region = sub[6]     
                 if stable_region is None or threshold !='max':
-                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, log) 
+                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, python, log) 
                     files_to_stability.append([file_stability,prefix])
                 else:
-                    
                     files_to_stability.append([stable_region,prefix])
 
             if len(sub) == 6: #files
                 type_file = sub[3]
                 if type_file == True: #if true it is partition matrix
-                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, log) 
+                    file_stability = stability_region(output, partition_matrix, prefix, comparing_partitions_script, n_stability, thr_stability, python ,log) 
                     files_to_stability.append([file_stability, prefix])
                 else:
                     go_stability = False
@@ -3103,16 +3298,14 @@ def main():
         #----------------------------------------------------------------------- 
         all_dfs = []
         prefix_df = []
-        list_values_block = []
-
+       
         if files_to_stability:
 
             for file, prefix in files_to_stability:
-
+                
                 try:
                     name_block = processing_block_names(file, prefix, log)
-                    first_data, final_data, values_block = processing_data(file, log)
-                    #list_values_block.append(values_block)
+                    first_data, final_data = processing_data(file, log)
                     
                     df = pd.DataFrame({'Block_id': name_block, 'Start': first_data, 'Finish': final_data, 'Pipeline': prefix})
                     all_dfs.append(df)
@@ -3122,20 +3315,23 @@ def main():
                 except Exception as e:
                     print(f'\t\tWarning: without stability reagions in the file {file}.')
                     go_stability = False
-      
+
         if all_dfs:  
             df = pd.concat(all_dfs, ignore_index = True)
             if len(prefix_df) == 2:
-                prefix, prefix_2 = prefix_df
+                prefix=prefix_df[0]
+                prefix_2=prefix_df[1]
+
             else:
                 prefix_2 = None
-                prefix = prefix_df
+                prefix = prefix_df[0]
+               
 
         if  go_stability == True:
             fig_st = change_processing_data(df, prefix, prefix_2, output, log)
             print_log(f"\t\tDone.\n", log)
-            fig_html_st = pio.to_html(fig_st, include_plotlyjs=False, full_html=False)
-            html_content += congruence_stability(fig_html_st)
+            fig_html_st = pio.to_html(fig_st, include_plotlyjs='cdn', full_html=False)
+            html_content += congruence_stability(fig_html_st, prefix, prefix_2, n_stability, thr_stability)
 
         #----------------------------------------------------------------------- 
         #  MODULE 4.3 - Congruence between pipelines
@@ -3146,21 +3342,20 @@ def main():
             i1_prefix=inputs_variables[0][1]
             i2_prefix=inputs_variables[1][1]
 
-            path_all_correspondence_lower = management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, i1_matrix, i2_matrix, prefix_both, output, score_value, log)
+            path_all_correspondence_lower = management_main_scripts(comparing_partitions_script, get_best_part_correspondence_script, remove_hifen_script, i1_matrix, i2_matrix, prefix_both, output, score_value, python, log)
 
             #Final score
             fig_heatmap = get_heatmap(output, i1_prefix, i2_prefix, threshold, log)
-            fig_html_heatmap = pio.to_html(fig_heatmap, include_plotlyjs=False,full_html=False)
+            fig_html_heatmap = pio.to_html(fig_heatmap, include_plotlyjs='cdn',full_html=False)
             html_content += congruence_heatmap(fig_html_heatmap, prefix_both)
                 
             #----------------------------------------------------------------------- 
             # Get best correspondence          
             
             if  not any(len(elem) == 6 and elem[3] is False for elem in inputs_variables): 
-                fig_tendency = get_tendency(output, prefix_both, log)
-                fig_tendency_html = pio.to_html(fig_tendency,include_plotlyjs=False, full_html=False)
-                html_content += congruence_tendency(fig_tendency_html)
-            
+                fig_tendency, nr_point_method_1, nr_point_method_2 = get_tendency(output, prefix_both, threshold,log)
+                fig_tendency_html = pio.to_html(fig_tendency,include_plotlyjs='cdn', full_html=False)
+                html_content += congruence_tendency(fig_tendency_html, score_value, prefix_both, nr_point_method_1, nr_point_method_2)
                 comparison = tendency_slop(path_all_correspondence_lower, i1_prefix, i2_prefix, output)
     #-------------------------------------------------------------------------------------------------------------------------------
     # MODULE 5 - OUTBREAK
@@ -3168,7 +3363,6 @@ def main():
     if go_outbreaks == True:
         
         #----------------------------------------------------------------------- 
-        # Variables
         clusterComposition_1 = inputs_variables[0][5]
         clusterComposition_2 = inputs_variables[1][5]
 
@@ -3181,41 +3375,44 @@ def main():
 
             #----------------------------------------------------------------------- 
             if values_outbreak:
-                calling_script_outbreak(stats_outbreak_script, path_stats_outbreak, output, prefix_both, values_outbreak, log)
+                calling_script_outbreak(python, stats_outbreak_script, path_stats_outbreak, output, prefix_both, values_outbreak, log)
                 process_files = read_files_outbreak(output)
-                fig_result = creation_overlap_clusters(process_files, output, values_outbreak)
+                fig_result, thresholds = creation_overlap_clusters(process_files, output, values_outbreak)
                 print_log(f"\tPlotting the matrices with the cluster overlap for each comparison", log)
                 
                 if not repeat_threshold_outbreak:
-                    html_content += summary_outbreak(fig_result)
+                    html_content += image_outbreak(fig_result)
+                    html_content += summary_outbreak(prefix_both, thresholds)
                 else:
                     final_files = find_html_outbreak(output, prefix_both, log)
                     path_temp = extration_section_original_file(output, final_files, log)
                     html_content += transfer_info_to_html_content(path_temp, html_content, log)
-                    html_content += summary_outbreak(fig_result)
+                    html_content += image_outbreak(fig_result)
+                    html_content += summary_outbreak(prefix_both, thresholds)
         else:
             print_log(f'\tImpossible outbreaks analysis.', log)
+
     #--------------------------------------------------------------------------------------------------------------------------
     #4 - END HTML report
-
+    html_content += references()
     html_content += javascript_function()
     html_content += create_html_footer()
     html_report = write_html(html_content, file_path_report, log)
     
-    path=f'{output}/html_all_modules.txt'
-    with open(path, 'w') as f:
-       f.write(html_content)
-    
+    # path=f'{output}/html_all_modules.txt'
+    # with open(path, 'w') as f:
+    #    f.write(html_content)  
+
     #----------------------------------------------------------------------------------------------------------------------------
     #END INFORMATIONS
-    
-    #print_log("\nEND Running EvalTree.py ...\n", log)
+
     print_log('Evaltree is done! If you found any issue please contact us.\n', log)
     end = datetime.datetime.now()
     elapsed = end - start
     print_log("\nEnd: " + str(end), log)
     print_log("Time elapsed: " + str(elapsed), log)
     log.close()
+
 
 if __name__ == "__main__":
     main()

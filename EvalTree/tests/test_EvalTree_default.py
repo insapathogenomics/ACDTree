@@ -17,7 +17,7 @@ def test_arguments_default():
   
     main_path=os.path.dirname(__file__)
     path=os.path.dirname(main_path) 
-    script_path = os.path.join(path,"evaltree.py")
+    script_path = os.path.join(path,"EvalTree.py")
     input1=os.path.join(main_path,'input1') 
     input2=os.path.join(main_path,'input2')
     output=os.path.join(main_path,'TEST1') 
@@ -103,7 +103,7 @@ def test_arguments_default():
 
 
     assert all_files == 34
-    assert total_images == 11
+    assert total_images == 12
     assert total_tsv == 17
     assert nr_html == 1
 
